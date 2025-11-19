@@ -84,4 +84,18 @@ Bank notes are physical representations of currency that can be traded between p
 
 ## To-Do / Future Improvements
 
-*   [ ] Full selector support (e.g., `@p`, `@a`, `@r`) for economy commands.
+### Planned Features
+*   [ ] **Common Economy API Support**: Implement compatibility with the Common Economy API for cross-mod integration
+*   [ ] **Remote Database Storage**: Add support for MySQL/PostgreSQL databases as an alternative to JSON files
+*   [ ] **Multi-Server Support**: Enable multiple servers to share a single database for synchronized economies across networks
+*   [ ] **Chest Sign Shops**: Implement player-owned chest shops similar to QuickShop-Hikari (Spigot)
+    - Right-click chest with item to create shop
+    - Left-click to buy, right-click to sell
+    - Sign-based UI showing price and stock
+    - Admin shop support (infinite stock)
+
+### Minor Improvements
+*   [ ] Full selector support (e.g., `@p`, `@a`, `@r`) for economy commands
+*   [ ] Transaction history/logs
+*   [ ] Configurable transaction fees
+*   [ ] Economy statistics and analytics
