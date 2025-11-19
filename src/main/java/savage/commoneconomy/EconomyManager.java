@@ -22,6 +22,7 @@ public class EconomyManager {
     private final File balanceFile;
     private final Gson gson;
     private EconomyConfig config;
+    private WorthConfig worthConfig;
 
     private EconomyManager() {
         Path configDir = FabricLoader.getInstance().getConfigDir().resolve("savs-common-economy");
@@ -30,6 +31,7 @@ public class EconomyManager {
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         
         loadConfig();
+        loadWorthConfig();
         load();
     }
 
@@ -60,6 +62,47 @@ public class EconomyManager {
             }
         }
     }
+
+    private void loadWorthConfig() {
+        if (!config.enableSellCommands) return;
+
+        Path configPath = FabricLoader.getInstance().getConfigDir().resolve("savs-common-economy").resolve("worth.json");
+        File configFile = configPath.toFile();
+
+        if (!configFile.exists()) {
+            this.worthConfig = new WorthConfig();
+            try (FileWriter writer = new FileWriter(configFile)) {
+                gson.toJson(this.worthConfig, writer);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            try (FileReader reader = new FileReader(configFile)) {
+                this.worthConfig = gson.fromJson(reader, WorthConfig.class);
+            } catch (IOException e) {
+                e.printStackTrace();
+                this.worthConfig = new WorthConfig();
+            }
+        }
+    }
+
+    // ... existing load/save methods ...
+
+    public boolean isSellEnabled() {
+        return config.enableSellCommands;
+    }
+
+    public BigDecimal getItemPrice(String itemId) {
+        if (worthConfig == null || worthConfig.itemPrices == null) return BigDecimal.ZERO;
+        return worthConfig.itemPrices.getOrDefault(itemId, BigDecimal.ZERO);
+    }
+
+    public Map<String, BigDecimal> getAllItemPrices() {
+        if (worthConfig == null) return new HashMap<>();
+        return worthConfig.itemPrices;
+    }
+
+    // ... existing methods ...
 
     public void load() {
         if (balanceFile.exists()) {

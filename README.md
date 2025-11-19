@@ -9,6 +9,7 @@ A lightweight, standalone economy mod for Minecraft 1.21.10 (Fabric). This mod p
 *   **Configuration**: Customizable default starting balance and currency formatting (symbol, position).
 *   **Autocompletion**: Smart tab completion for both online and offline player names.
 *   **Selectors**: Basic support for the `@s` (self) selector.
+*   **Sell System**: Configurable system to allow players to check item values and sell them (optional, disabled by default).
 
 ## Commands
 
@@ -16,6 +17,12 @@ A lightweight, standalone economy mod for Minecraft 1.21.10 (Fabric). This mod p
 *   `/bal` or `/balance`: Check your own balance.
 *   `/bal <player>`: Check another player's balance (Online or Offline).
 *   `/pay <player> <amount>`: Pay a specific amount to another player.
+*   `/worth`: Check the value of the item in your hand.
+*   `/worth all`: Check the value of all items in your inventory matching the one in your hand.
+*   `/worth list`: List all sellable items and their prices.
+*   `/worth <item>`: Check the value of a specific item (e.g., `minecraft:apple`).
+*   `/sell`: Sell the item stack currently in your hand.
+*   `/sell all`: Sell all items in your inventory matching the one in your hand.
 
 ### Admin Commands (Level 2+)
 *   `/givemoney <player> <amount>`: Add money to a player's account.
@@ -31,13 +38,28 @@ The configuration file is located at `config/savs-common-economy/config.json`.
 {
   "defaultBalance": 1000,
   "currencySymbol": "$",
-  "symbolBeforeAmount": true
+  "symbolBeforeAmount": true,
+  "enableSellCommands": false
 }
 ```
 
 *   `defaultBalance`: The amount of money new players start with (default: 1000).
 *   `currencySymbol`: The symbol used for currency (e.g., "$", "€", "Coins").
 *   `symbolBeforeAmount`: If true, shows "$100"; if false, shows "100$".
+*   `enableSellCommands`: Set to `true` to enable `/worth` and `/sell` commands.
+
+### Worth Configuration
+
+If `enableSellCommands` is true, a `worth.json` file will be created in the same directory. Use this to define item prices:
+
+```json
+{
+  "itemPrices": {
+    "minecraft:apple": 10.0,
+    "minecraft:diamond": 100.0
+  }
+}
+```
 
 ## To-Do / Future Improvements
 

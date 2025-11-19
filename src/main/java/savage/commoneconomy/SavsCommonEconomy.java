@@ -17,8 +17,9 @@ public class SavsCommonEconomy implements ModInitializer {
 
 		// Register commands
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-			EconomyCommands.register(dispatcher);
-		});
+            EconomyCommands.register(dispatcher);
+            SellCommands.register(dispatcher);
+        });
 
 		// Load economy data when server starts
 		ServerLifecycleEvents.SERVER_STARTING.register(server -> {
