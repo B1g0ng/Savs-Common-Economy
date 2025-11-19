@@ -198,9 +198,18 @@ public class EconomyManager {
         }
     }
 
-    private static class AccountData {
-        String name;
-        BigDecimal balance;
+    public java.util.List<AccountData> getTopAccounts(int limit) {
+        java.util.List<AccountData> list = new java.util.ArrayList<>(accounts.values());
+        list.sort((a, b) -> b.balance.compareTo(a.balance));
+        if (list.size() > limit) {
+            return list.subList(0, limit);
+        }
+        return list;
+    }
+
+    public static class AccountData {
+        public String name;
+        public BigDecimal balance;
 
         AccountData(String name, BigDecimal balance) {
             this.name = name;

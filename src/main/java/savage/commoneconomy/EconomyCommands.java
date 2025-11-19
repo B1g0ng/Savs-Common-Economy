@@ -35,17 +35,9 @@ public class EconomyCommands {
                         .suggests(PLAYER_SUGGESTION_PROVIDER)
                         .executes(EconomyCommands::checkOtherBalance)));
 
-        dispatcher.register(CommandManager.literal("balance")
-                .executes(EconomyCommands::checkSelfBalance)
-                .then(CommandManager.argument("target", StringArgumentType.string())
-                        .suggests(PLAYER_SUGGESTION_PROVIDER)
-                        .executes(EconomyCommands::checkOtherBalance)));
-
-        dispatcher.register(CommandManager.literal("pay")
-                .then(CommandManager.argument("target", StringArgumentType.string())
-                        .suggests(PLAYER_SUGGESTION_PROVIDER)
-                        .then(CommandManager.argument("amount", DoubleArgumentType.doubleArg(0))
-                                .executes(EconomyCommands::pay))));
+        dispatcher.register(CommandManager.literal("withdraw")
+                .then(CommandManager.argument("amount", DoubleArgumentType.doubleArg(1))
+                        .executes(EconomyCommands::withdraw)));
 
         dispatcher.register(CommandManager.literal("givemoney")
                 .requires(source -> source.hasPermissionLevel(2))
@@ -73,9 +65,38 @@ public class EconomyCommands {
                 .then(CommandManager.argument("target", StringArgumentType.string())
                         .suggests(PLAYER_SUGGESTION_PROVIDER)
                         .executes(EconomyCommands::resetMoney)));
+
+        dispatcher.register(CommandManager.literal("baltop")
+                .executes(EconomyCommands::balTop));
+        dispatcher.register(CommandManager.literal("balancetop")
+                .executes(EconomyCommands::balTop));
+
+        dispatcher.register(CommandManager.literal("pay")
+                .then(CommandManager.argument("target", StringArgumentType.string())
+                        .suggests(PLAYER_SUGGESTION_PROVIDER)
+                        .then(CommandManager.argument("amount", DoubleArgumentType.doubleArg(0))
+                                .executes(EconomyCommands::pay))));
+
+        dispatcher.register(CommandManager.literal("balance")
+                .executes(EconomyCommands::checkSelfBalance)
+                .then(CommandManager.argument("target", StringArgumentType.string())
+                        .suggests(PLAYER_SUGGESTION_PROVIDER)
+                        .executes(EconomyCommands::checkOtherBalance)));
     }
 
-    private static UUID getTargetUUID(CommandContext<ServerCommandSource> context, String targetName) throws CommandSyntaxException {
+    private static int balTop(CommandContext<ServerCommandSource> context) {
+        java.util.List<EconomyManager.AccountData> topAccounts = EconomyManager.getInstance().getTopAccounts(10);
+        
+        context.getSource().sendFeedback(() -> Text.literal("--- Balance Top 10 ---"), false);
+        for (int i = 0; i < topAccounts.size(); i++) {
+            EconomyManager.AccountData account = topAccounts.get(i);
+            int rank = i + 1;
+            context.getSource().sendFeedback(() -> Text.literal(rank + ". " + account.name + ": " + EconomyManager.getInstance().format(account.balance)), false);
+        }
+        return 1;
+    }
+
+    private static java.util.UUID getTargetUUID(CommandContext<ServerCommandSource> context, String targetName) throws CommandSyntaxException {
         if (targetName.equals("@s")) {
             return context.getSource().getPlayerOrThrow().getUuid();
         }
@@ -249,6 +270,36 @@ public class EconomyCommands {
             target.sendMessage(Text.literal("Your balance has been reset to " + formattedAmount));
         }
         return 1;
+    }
+
+    private static int withdraw(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        double amountDouble = DoubleArgumentType.getDouble(context, "amount");
+        BigDecimal amount = BigDecimal.valueOf(amountDouble);
+
+        if (EconomyManager.getInstance().removeBalance(player.getUuid(), amount)) {
+            // Create a paper item with NBT data
+            net.minecraft.item.ItemStack note = new net.minecraft.item.ItemStack(net.minecraft.item.Items.PAPER);
+            
+            // Create NBT data for the bank note
+            net.minecraft.nbt.NbtCompound nbt = new net.minecraft.nbt.NbtCompound();
+            nbt.putBoolean("EconomyBankNote", true);
+            nbt.putDouble("Value", amountDouble);
+            note.set(net.minecraft.component.DataComponentTypes.CUSTOM_DATA, 
+                    net.minecraft.component.type.NbtComponent.of(nbt));
+            
+            // Set custom name
+            note.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME,
+                    Text.literal("Bank Note: " + EconomyManager.getInstance().format(amount))
+                            .formatted(net.minecraft.util.Formatting.GREEN));
+
+            player.getInventory().offerOrDrop(note);
+            context.getSource().sendFeedback(() -> Text.literal("Withdrew " + EconomyManager.getInstance().format(amount) + " as a bank note."), false);
+            return 1;
+        } else {
+            context.getSource().sendError(Text.literal("Insufficient funds."));
+            return 0;
+        }
     }
 }
 
