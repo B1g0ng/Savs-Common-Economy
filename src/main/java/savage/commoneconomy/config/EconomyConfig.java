@@ -7,4 +7,5 @@ public class EconomyConfig {
     public String currencySymbol = "$";
     public boolean symbolBeforeAmount = true;
     public boolean enableSellCommands = false;
+    public boolean enableChestShops = true;
 }

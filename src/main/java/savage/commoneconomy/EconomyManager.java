@@ -24,7 +24,10 @@ public class EconomyManager {
     private final File balanceFile;
     private final Gson gson;
     private EconomyConfig config;
-    private WorthConfig worthConfig;
+
+    public EconomyConfig getConfig() {
+        return config;
+    }
 
     private EconomyManager() {
         Path configDir = FabricLoader.getInstance().getConfigDir().resolve("savs-common-economy");
@@ -33,7 +36,6 @@ public class EconomyManager {
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         
         loadConfig();
-        loadWorthConfig();
         load();
     }
 
@@ -64,47 +66,6 @@ public class EconomyManager {
             }
         }
     }
-
-    private void loadWorthConfig() {
-        if (!config.enableSellCommands) return;
-
-        Path configPath = FabricLoader.getInstance().getConfigDir().resolve("savs-common-economy").resolve("worth.json");
-        File configFile = configPath.toFile();
-
-        if (!configFile.exists()) {
-            this.worthConfig = new WorthConfig();
-            try (FileWriter writer = new FileWriter(configFile)) {
-                gson.toJson(this.worthConfig, writer);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } else {
-            try (FileReader reader = new FileReader(configFile)) {
-                this.worthConfig = gson.fromJson(reader, WorthConfig.class);
-            } catch (IOException e) {
-                e.printStackTrace();
-                this.worthConfig = new WorthConfig();
-            }
-        }
-    }
-
-    // ... existing load/save methods ...
-
-    public boolean isSellEnabled() {
-        return config.enableSellCommands;
-    }
-
-    public BigDecimal getItemPrice(String itemId) {
-        if (worthConfig == null || worthConfig.itemPrices == null) return BigDecimal.ZERO;
-        return worthConfig.itemPrices.getOrDefault(itemId, BigDecimal.ZERO);
-    }
-
-    public Map<String, BigDecimal> getAllItemPrices() {
-        if (worthConfig == null) return new HashMap<>();
-        return worthConfig.itemPrices;
-    }
-
-    // ... existing methods ...
 
     public void load() {
         if (balanceFile.exists()) {
@@ -200,13 +161,54 @@ public class EconomyManager {
         }
     }
 
+    // Leaderboard support
     public java.util.List<AccountData> getTopAccounts(int limit) {
-        java.util.List<AccountData> list = new java.util.ArrayList<>(accounts.values());
-        list.sort((a, b) -> b.balance.compareTo(a.balance));
-        if (list.size() > limit) {
-            return list.subList(0, limit);
+        return accounts.values().stream()
+                .sorted((a, b) -> b.balance.compareTo(a.balance))
+                .limit(limit)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    // Sell system support
+    private WorthConfig worthConfig;
+
+    public boolean isSellEnabled() {
+        return config != null && config.enableSellCommands;
+    }
+
+    public BigDecimal getItemPrice(String itemId) {
+        if (worthConfig == null) {
+            loadWorthConfig();
         }
-        return list;
+        return worthConfig.itemPrices.getOrDefault(itemId, BigDecimal.ZERO);
+    }
+
+    public Map<String, BigDecimal> getAllItemPrices() {
+        if (worthConfig == null) {
+            loadWorthConfig();
+        }
+        return new HashMap<>(worthConfig.itemPrices);
+    }
+
+    private void loadWorthConfig() {
+        Path worthPath = FabricLoader.getInstance().getConfigDir().resolve("savs-common-economy").resolve("worth.json");
+        File worthFile = worthPath.toFile();
+
+        if (!worthFile.exists()) {
+            this.worthConfig = new WorthConfig();
+            try (FileWriter writer = new FileWriter(worthFile)) {
+                gson.toJson(this.worthConfig, writer);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            try (FileReader reader = new FileReader(worthFile)) {
+                this.worthConfig = gson.fromJson(reader, WorthConfig.class);
+            } catch (IOException e) {
+                e.printStackTrace();
+                this.worthConfig = new WorthConfig();
+            }
+        }
     }
 
     public static class AccountData {
