@@ -89,8 +89,15 @@ public class ShopSignHelper {
                 stockText = (shop.isBuying() ? "Space: " : "Stock: ") + shop.getStock();
             }
             
+            Text headerText;
+            if (shop.isAdmin()) {
+                headerText = Text.literal("§4[Admin Shop]");
+            } else {
+                headerText = Text.literal("§1" + shop.getOwnerName());
+            }
+            
             SignText frontText = new SignText()
-                    .withMessage(0, Text.literal("§1[Shop]"))
+                    .withMessage(0, headerText)
                     .withMessage(1, Text.literal(itemName))
                     .withMessage(2, Text.literal(shopType + ": " + priceText))
                     .withMessage(3, Text.literal(stockText));
