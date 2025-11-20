@@ -109,7 +109,9 @@ Bank notes are physical representations of currency that can be traded between p
 *   Server-side validation prevents duplication
 
 ## Permissions
-This mod supports the [Fabric Permissions API](https://github.com/lucko/fabric-permissions-api). If installed, you can use the following permission nodes. If not installed, the mod falls back to vanilla OP levels (Level 2 for admin commands).
+This mod supports the [Fabric Permissions API](https://github.com/lucko/fabric-permissions-api). To manage these permissions, you will need a permissions management mod such as **[LuckPerms](https://luckperms.net/)** (recommended) or any other mod that implements the Fabric Permissions API.
+
+If no permissions mod is installed, the mod falls back to vanilla OP levels (Level 2 for admin commands).
 
 ### Player Permissions (Default: true)
 *   `savscommoneconomy.command.bal`: Access to `/bal` (self).
