@@ -8,4 +8,16 @@ public class EconomyConfig {
     public boolean symbolBeforeAmount = true;
     public boolean enableSellCommands = false;
     public boolean enableChestShops = true;
+    
+    public StorageConfig storage = new StorageConfig();
+
+    public static class StorageConfig {
+        public String type = "JSON"; // JSON, SQLITE, MYSQL, POSTGRESQL
+        public String host = "localhost";
+        public int port = 3306;
+        public String database = "savs_economy";
+        public String user = "root";
+        public String password = "password";
+        public String tablePrefix = "savs_eco_";
+    }
 }

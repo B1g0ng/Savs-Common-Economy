@@ -36,6 +36,23 @@ dependencies {
 	// Fabric Permissions API
 	modImplementation "me.lucko:fabric-permissions-api:0.5.0"
 	include "me.lucko:fabric-permissions-api:0.5.0"
+
+	// Database Dependencies
+	// HikariCP (Connection Pooling)
+	modImplementation "com.zaxxer:HikariCP:5.1.0"
+	include "com.zaxxer:HikariCP:5.1.0"
+
+	// SQLite
+	modImplementation "org.xerial:sqlite-jdbc:3.46.0.0"
+	include "org.xerial:sqlite-jdbc:3.46.0.0"
+
+	// MySQL
+	modImplementation "com.mysql:mysql-connector-j:8.4.0"
+	include "com.mysql:mysql-connector-j:8.4.0"
+
+	// PostgreSQL
+	modImplementation "org.postgresql:postgresql:42.7.3"
+	include "org.postgresql:postgresql:42.7.3"
 }
 
 repositories {

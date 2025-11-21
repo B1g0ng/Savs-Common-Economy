@@ -2,16 +2,16 @@ package savage.commoneconomy;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import net.fabricmc.loader.api.FabricLoader;
 import savage.commoneconomy.config.EconomyConfig;
 import savage.commoneconomy.config.WorthConfig;
+import savage.commoneconomy.storage.EconomyStorage;
+import savage.commoneconomy.storage.JsonStorage;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -20,8 +20,7 @@ import java.util.UUID;
 
 public class EconomyManager {
     private static EconomyManager instance;
-    private final Map<UUID, AccountData> accounts = new HashMap<>();
-    private final File balanceFile;
+    private EconomyStorage storage;
     private final Gson gson;
     private EconomyConfig config;
 
@@ -30,12 +29,32 @@ public class EconomyManager {
     }
 
     private EconomyManager() {
-        Path configDir = FabricLoader.getInstance().getConfigDir().resolve("savs-common-economy");
-        configDir.toFile().mkdirs();
-        this.balanceFile = configDir.resolve("balances.json").toFile();
         this.gson = new GsonBuilder().setPrettyPrinting().create();
-        
         loadConfig();
+        
+        // Initialize storage based on config
+        switch (config.storage.type.toUpperCase()) {
+            case "SQLITE":
+                this.storage = new savage.commoneconomy.storage.SqliteStorage(config.storage.tablePrefix);
+                break;
+            case "MYSQL":
+                this.storage = new savage.commoneconomy.storage.MysqlStorage(
+                    config.storage.host, config.storage.port, config.storage.database, 
+                    config.storage.user, config.storage.password, config.storage.tablePrefix
+                );
+                break;
+            case "POSTGRESQL":
+                this.storage = new savage.commoneconomy.storage.PostgresStorage(
+                    config.storage.host, config.storage.port, config.storage.database, 
+                    config.storage.user, config.storage.password, config.storage.tablePrefix
+                );
+                break;
+            case "JSON":
+            default:
+                this.storage = new JsonStorage(this);
+                break;
+        }
+        
         load();
     }
 
@@ -51,6 +70,9 @@ public class EconomyManager {
         File configFile = configPath.toFile();
 
         if (!configFile.exists()) {
+            // Ensure directory exists
+            configFile.getParentFile().mkdirs();
+            
             this.config = new EconomyConfig();
             try (FileWriter writer = new FileWriter(configFile)) {
                 gson.toJson(this.config, writer);
@@ -68,35 +90,19 @@ public class EconomyManager {
     }
 
     public void load() {
-        if (balanceFile.exists()) {
-            try (FileReader reader = new FileReader(balanceFile)) {
-                Type type = new TypeToken<HashMap<UUID, AccountData>>() {}.getType();
-                Map<UUID, AccountData> loaded = gson.fromJson(reader, type);
-                if (loaded != null) {
-                    accounts.putAll(loaded);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        storage.load();
     }
 
     public void save() {
-        try (FileWriter writer = new FileWriter(balanceFile)) {
-            gson.toJson(accounts, writer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        storage.save();
     }
 
     public BigDecimal getBalance(UUID uuid) {
-        return accounts.containsKey(uuid) ? accounts.get(uuid).balance : config.defaultBalance;
+        return storage.getBalance(uuid);
     }
 
     public void setBalance(UUID uuid, BigDecimal amount) {
-        AccountData data = accounts.computeIfAbsent(uuid, k -> new AccountData("Unknown", config.defaultBalance));
-        data.balance = amount;
-        save();
+        storage.setBalance(uuid, amount);
     }
 
     public boolean addBalance(UUID uuid, BigDecimal amount) {
@@ -115,21 +121,11 @@ public class EconomyManager {
     }
 
     public boolean hasAccount(UUID uuid) {
-        return accounts.containsKey(uuid);
+        return storage.hasAccount(uuid);
     }
 
     public void createAccount(UUID uuid, String name) {
-        if (!accounts.containsKey(uuid)) {
-            accounts.put(uuid, new AccountData(name, config.defaultBalance));
-            save();
-        } else {
-            // Update name if changed
-            AccountData data = accounts.get(uuid);
-            if (!data.name.equals(name)) {
-                data.name = name;
-                save();
-            }
-        }
+        storage.createAccount(uuid, name);
     }
 
     public void resetBalance(UUID uuid) {
@@ -137,20 +133,11 @@ public class EconomyManager {
     }
 
     public UUID getUUID(String name) {
-        for (Map.Entry<UUID, AccountData> entry : accounts.entrySet()) {
-            if (entry.getValue().name.equalsIgnoreCase(name)) {
-                return entry.getKey();
-            }
-        }
-        return null;
+        return storage.getUUID(name);
     }
 
     public java.util.Collection<String> getOfflinePlayerNames() {
-        java.util.List<String> names = new java.util.ArrayList<>();
-        for (AccountData data : accounts.values()) {
-            names.add(data.name);
-        }
-        return names;
+        return storage.getOfflinePlayerNames();
     }
 
     public String format(BigDecimal amount) {
@@ -163,10 +150,7 @@ public class EconomyManager {
 
     // Leaderboard support
     public java.util.List<AccountData> getTopAccounts(int limit) {
-        return accounts.values().stream()
-                .sorted((a, b) -> b.balance.compareTo(a.balance))
-                .limit(limit)
-                .collect(java.util.stream.Collectors.toList());
+        return storage.getTopAccounts(limit);
     }
 
     // Sell system support
@@ -215,7 +199,7 @@ public class EconomyManager {
         public String name;
         public BigDecimal balance;
 
-        AccountData(String name, BigDecimal balance) {
+        public AccountData(String name, BigDecimal balance) {
             this.name = name;
             this.balance = balance;
         }

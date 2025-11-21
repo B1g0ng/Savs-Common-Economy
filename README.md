@@ -4,7 +4,7 @@ A lightweight, **server-side only** economy mod for Minecraft 1.21.10 (Fabric). 
 
 ## Features
 
-*   **Economy System**: Tracks player balances using a simple JSON file (`balances.json`).
+*   **Economy System**: Tracks player balances with flexible storage options (JSON, SQLite, MySQL, PostgreSQL).
 *   **Server-Side Only**: No client installation required - fully compatible with vanilla clients.
 *   **Offline Support**: Supports payments and administrative actions for offline players who have joined the server at least once.
 *   **Configuration**: Customizable default starting balance and currency formatting (symbol, position).
@@ -15,6 +15,7 @@ A lightweight, **server-side only** economy mod for Minecraft 1.21.10 (Fabric). 
 *   **Sell System**: Configurable system to allow players to check item values and sell them (optional, disabled by default).
 *   **Chest Shops**: Player-owned shops using chests and signs with dynamic stock detection (optional, enabled by default).
 *   **Transaction Logging**: Comprehensive logging of all economy transactions with a searchable in-game command.
+*   **Database Support**: Choose between JSON (default), SQLite, MySQL, or PostgreSQL for data storage.
 
 ## Commands
 
@@ -59,7 +60,16 @@ The configuration file is located at `config/savs-common-economy/config.json`.
   "currencySymbol": "$",
   "symbolBeforeAmount": true,
   "enableSellCommands": false,
-  "enableChestShops": true
+  "enableChestShops": true,
+  "storage": {
+    "type": "JSON",
+    "host": "localhost",
+    "port": 3306,
+    "database": "savs_economy",
+    "user": "root",
+    "password": "password",
+    "tablePrefix": "savs_eco_"
+  }
 }
 ```
 
@@ -68,6 +78,55 @@ The configuration file is located at `config/savs-common-economy/config.json`.
 *   `symbolBeforeAmount`: If true, shows "$100"; if false, shows "100$".
 *   `enableSellCommands`: Set to `true` to enable `/worth` and `/sell` commands.
 *   `enableChestShops`: Set to `true` to enable the chest shop system.
+*   `storage.type`: Storage backend to use (`JSON`, `SQLITE`, `MYSQL`, `POSTGRESQL`).
+*   `storage.host`: Database host (for MySQL/PostgreSQL).
+*   `storage.port`: Database port (for MySQL/PostgreSQL).
+*   `storage.database`: Database name (for MySQL/PostgreSQL).
+*   `storage.user`: Database username (for MySQL/PostgreSQL).
+*   `storage.password`: Database password (for MySQL/PostgreSQL).
+*   `storage.tablePrefix`: Prefix for database tables (for SQL backends).
+
+## Database Support
+
+The mod supports multiple storage backends for economy data:
+
+### JSON (Default)
+- **File**: `config/savs-common-economy/balances.json`
+- **Use Case**: Single servers, easy setup
+- **No additional setup required**
+
+### SQLite
+- **File**: `config/savs-common-economy/economy_data.sqlite`
+- **Use Case**: Single servers with better performance than JSON
+- **Setup**: Just change `"type": "SQLITE"` in config
+
+### MySQL / MariaDB
+- **Use Case**: Multi-server networks, shared economy across servers
+- **Setup**:
+  1. Install MySQL/MariaDB on your server
+  2. Create database: `CREATE DATABASE savs_economy;`
+  3. Create user (optional): `CREATE USER 'minecraft'@'%' IDENTIFIED BY 'password';`
+  4. Grant permissions: `GRANT ALL PRIVILEGES ON savs_economy.* TO 'minecraft'@'%';`
+  5. Update config with connection details
+
+### PostgreSQL
+- **Use Case**: Advanced multi-server setups
+- **Setup**: Similar to MySQL, but use PostgreSQL commands
+
+**Example MySQL/MariaDB Config:**
+```json
+"storage": {
+  "type": "MYSQL",
+  "host": "your-database-server.com",
+  "port": 3306,
+  "database": "savs_economy",
+  "user": "minecraft",
+  "password": "your_secure_password",
+  "tablePrefix": "savs_eco_"
+}
+```
+
+**Note**: For multi-server networks, all servers should point to the same database with identical configuration.
 
 ### Worth Configuration
 
@@ -143,8 +202,12 @@ If no permissions mod is installed, the mod falls back to vanilla OP levels (Lev
 
 ### Planned Features
 *   [ ] **Common Economy API Support**: Implement compatibility with the Common Economy API for cross-mod integration
-*   [ ] **Remote Database Storage**: Add support for MySQL/PostgreSQL databases as an alternative to JSON files
-*   [ ] **Multi-Server Support**: Enable multiple servers to share a single database for synchronized economies across networks
+*   [x] **Remote Database Storage**: Add support for MySQL/PostgreSQL databases as an alternative to JSON files
+*   [ ] **Enhanced Multi-Server Support**: Improve cross-server functionality for Velocity networks:
+    *   Transaction safety (optimistic locking to prevent race conditions)
+    *   Shared shop data across servers
+    *   Centralized transaction logging in database
+    *   Connection pool tuning options
 
 ### Minor Improvements
 *   [ ] Full selector support (e.g., `@p`, `@a`, `@r`) for economy commands
