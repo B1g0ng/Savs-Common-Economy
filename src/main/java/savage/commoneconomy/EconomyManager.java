@@ -28,34 +28,8 @@ public class EconomyManager {
         return config;
     }
 
-    private EconomyManager() {
-        this.gson = new GsonBuilder().setPrettyPrinting().create();
-        loadConfig();
-        
-        // Initialize storage based on config
-        switch (config.storage.type.toUpperCase()) {
-            case "SQLITE":
-                this.storage = new savage.commoneconomy.storage.SqliteStorage(config.storage.tablePrefix);
-                break;
-            case "MYSQL":
-                this.storage = new savage.commoneconomy.storage.MysqlStorage(
-                    config.storage.host, config.storage.port, config.storage.database, 
-                    config.storage.user, config.storage.password, config.storage.tablePrefix
-                );
-                break;
-            case "POSTGRESQL":
-                this.storage = new savage.commoneconomy.storage.PostgresStorage(
-                    config.storage.host, config.storage.port, config.storage.database, 
-                    config.storage.user, config.storage.password, config.storage.tablePrefix
-                );
-                break;
-            case "JSON":
-            default:
-                this.storage = new JsonStorage(this);
-                break;
-        }
-        
-        load();
+    public static EconomyStorage getStorage() {
+        return getInstance().storage;
     }
 
     public static EconomyManager getInstance() {
@@ -63,6 +37,28 @@ public class EconomyManager {
             instance = new EconomyManager();
         }
         return instance;
+    }
+
+    private EconomyManager() {
+        this.gson = new GsonBuilder().setPrettyPrinting().create();
+        loadConfig();
+        
+        String type = config.storage.type.toUpperCase();
+        switch (type) {
+            case "MYSQL":
+                storage = new savage.commoneconomy.storage.MysqlStorage(this, config.storage.host, config.storage.port, config.storage.database, config.storage.user, config.storage.password, config.storage.tablePrefix);
+                break;
+            case "SQLITE":
+                storage = new savage.commoneconomy.storage.SqliteStorage(this, config.storage.tablePrefix);
+                break;
+            case "POSTGRES":
+            case "POSTGRESQL":
+                storage = new savage.commoneconomy.storage.PostgresStorage(this, config.storage.host, config.storage.port, config.storage.database, config.storage.user, config.storage.password, config.storage.tablePrefix);
+                break;
+            default:
+                storage = new JsonStorage(this);
+                break;
+        }
     }
 
     private void loadConfig() {
@@ -106,18 +102,60 @@ public class EconomyManager {
     }
 
     public boolean addBalance(UUID uuid, BigDecimal amount) {
-        BigDecimal current = getBalance(uuid);
-        setBalance(uuid, current.add(amount));
-        return true;
+        int retries = 10;
+        while (retries > 0) {
+            // Reload account data to get latest version
+            AccountData data = getAccountData(uuid);
+            BigDecimal current = data != null ? data.balance : config.defaultBalance;
+            long version = data != null ? data.version : 0;
+            
+            if (storage.setBalance(uuid, current.add(amount), version)) {
+                return true;
+            }
+            retries--;
+            try {
+                Thread.sleep(10 + (long)(Math.random() * 10)); // Small random backoff
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        return false; // Failed after retries
     }
 
     public boolean removeBalance(UUID uuid, BigDecimal amount) {
-        BigDecimal current = getBalance(uuid);
-        if (current.compareTo(amount) >= 0) {
-            setBalance(uuid, current.subtract(amount));
-            return true;
+        int retries = 10;
+        while (retries > 0) {
+            // Reload account data to get latest version
+            AccountData data = getAccountData(uuid);
+            BigDecimal current = data != null ? data.balance : config.defaultBalance;
+            long version = data != null ? data.version : 0;
+            
+            if (current.compareTo(amount) >= 0) {
+                if (storage.setBalance(uuid, current.subtract(amount), version)) {
+                    return true;
+                }
+            } else {
+                return false; // Insufficient funds
+            }
+            retries--;
+            try {
+                Thread.sleep(10 + (long)(Math.random() * 10)); // Small random backoff
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
-        return false;
+        return false; // Failed after retries
+    }
+    
+    private AccountData getAccountData(UUID uuid) {
+        // Helper to get raw account data including version
+        // This requires exposing a way to get AccountData from storage or reloading
+        // For now, we can just use getBalance but we need the version.
+        // Let's add a getAccount method to storage interface or just rely on implementation details
+        // Actually, we need to add getAccount to EconomyStorage interface to do this properly.
+        // For now, let's implement a workaround or update interface.
+        // Updating interface is better.
+        return storage.getAccount(uuid);
     }
 
     public boolean hasAccount(UUID uuid) {
@@ -198,10 +236,16 @@ public class EconomyManager {
     public static class AccountData {
         public String name;
         public BigDecimal balance;
+        public long version;
 
         public AccountData(String name, BigDecimal balance) {
+            this(name, balance, 0);
+        }
+
+        public AccountData(String name, BigDecimal balance, long version) {
             this.name = name;
             this.balance = balance;
+            this.version = version;
         }
     }
 }

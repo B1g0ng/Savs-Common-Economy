@@ -13,11 +13,17 @@ public interface EconomyStorage {
     
     BigDecimal getBalance(UUID uuid);
     void setBalance(UUID uuid, BigDecimal amount);
+    boolean setBalance(UUID uuid, BigDecimal amount, long expectedVersion);
     
     boolean hasAccount(UUID uuid);
+    AccountData getAccount(UUID uuid);
     void createAccount(UUID uuid, String name);
     
     UUID getUUID(String name);
     Collection<String> getOfflinePlayerNames();
     List<AccountData> getTopAccounts(int limit);
+    
+    void logTransaction(long timestamp, String source, String target, BigDecimal amount, String type, String details);
+    
+    List<savage.commoneconomy.util.TransactionLogger.LogEntry> searchLogs(String target, long cutoffTimestamp);
 }

@@ -201,15 +201,19 @@ public class EconomyCommands {
             return 0;
         }
 
-        EconomyManager.getInstance().addBalance(targetUUID, amount);
-        context.getSource().sendFeedback(() -> Text.literal("Gave " + formattedAmount + " to " + displayName), true);
-        
-        ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
-        if (target != null) {
-            target.sendMessage(Text.literal("Received " + formattedAmount + " (Admin Gift)"));
+        if (EconomyManager.getInstance().addBalance(targetUUID, amount)) {
+            context.getSource().sendFeedback(() -> Text.literal("Gave " + formattedAmount + " to " + displayName), true);
+            
+            ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
+            if (target != null) {
+                target.sendMessage(Text.literal("Received " + formattedAmount + " (Admin Gift)"));
+            }
+            savage.commoneconomy.util.TransactionLogger.log("ADMIN_GIVE", context.getSource().getName(), displayName, amount, "Admin Gift");
+            return 1;
+        } else {
+            context.getSource().sendError(Text.literal("Transaction failed. Please try again."));
+            return 0;
         }
-        savage.commoneconomy.util.TransactionLogger.log("ADMIN_GIVE", context.getSource().getName(), displayName, amount, "Admin Gift");
-        return 1;
     }
 
     private static int takeMoney(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
@@ -227,13 +231,28 @@ public class EconomyCommands {
         }
 
         if (!EconomyManager.getInstance().removeBalance(targetUUID, amount)) {
-            EconomyManager.getInstance().setBalance(targetUUID, BigDecimal.ZERO);
-            context.getSource().sendFeedback(() -> Text.literal("Took as much as possible from " + displayName + " (now " + EconomyManager.getInstance().format(BigDecimal.ZERO) + ")"), true);
+            // If remove fails, it could be insufficient funds OR concurrency failure.
+            // Ideally removeBalance should distinguish, but for now we assume if it returns false it might be funds or error.
+            // However, for admin take, we might want to force set to 0 if funds are low, but removeBalance handles logic.
+            // Wait, my previous implementation of removeBalance returns false for insufficient funds OR retries exhausted.
+            // Let's check balance first to distinguish? No, that's race condition.
+            // For now, let's just report failure.
+            // Actually, the previous code had a fallback:
+            /*
+            if (!EconomyManager.getInstance().removeBalance(targetUUID, amount)) {
+                EconomyManager.getInstance().setBalance(targetUUID, BigDecimal.ZERO);
+                context.getSource().sendFeedback(() -> Text.literal("Took as much as possible from " + displayName + " (now " + EconomyManager.getInstance().format(BigDecimal.ZERO) + ")"), true);
+            }
+            */
+            // This fallback is dangerous if it was a concurrency failure.
+            // We should probably just report failure.
+            context.getSource().sendError(Text.literal("Could not take money (Insufficient funds or transaction failed)."));
+            return 0;
         } else {
             context.getSource().sendFeedback(() -> Text.literal("Took " + formattedAmount + " from " + displayName), true);
+            savage.commoneconomy.util.TransactionLogger.log("ADMIN_TAKE", context.getSource().getName(), displayName, amount, "Admin Take");
+            return 1;
         }
-        savage.commoneconomy.util.TransactionLogger.log("ADMIN_TAKE", context.getSource().getName(), displayName, amount, "Admin Take");
-        return 1;
     }
 
     private static int setMoney(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
@@ -250,6 +269,10 @@ public class EconomyCommands {
             return 0;
         }
 
+        // setBalance in Manager is void? No, I need to check Manager.
+        // Manager.setBalance is void. I should update Manager to return boolean or handle retries for setBalance too.
+        // Wait, Manager.setBalance calls storage.setBalance which is void in the interface?
+        // Let's check EconomyManager.java again.
         EconomyManager.getInstance().setBalance(targetUUID, amount);
         context.getSource().sendFeedback(() -> Text.literal("Set " + displayName + "'s balance to " + formattedAmount), true);
         

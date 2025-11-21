@@ -7,6 +7,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -19,27 +20,42 @@ public class TransactionLogger {
 
     public static void log(String type, String source, String target, BigDecimal amount, String details) {
         EXECUTOR.submit(() -> {
-            try {
-                if (!LOG_FILE.exists()) {
-                    LOG_FILE.getParentFile().mkdirs();
-                    LOG_FILE.createNewFile();
-                }
+            long timestamp = System.currentTimeMillis();
+            
+            // Try to log to database if available
+            savage.commoneconomy.storage.EconomyStorage storage = savage.commoneconomy.EconomyManager.getStorage();
+            if (storage instanceof savage.commoneconomy.storage.SqlStorage) {
+                storage.logTransaction(timestamp, source, target, amount, type, details);
+                return;
+            }
 
-                String timestamp = LocalDateTime.now().format(DATE_FORMAT);
-                String logEntry = String.format("[%s] [%s] %s -> %s: $%s (%s)%n", 
-                    timestamp, type, source, target, amount.toPlainString(), details);
+            // Fallback to file logging
+            LogEntry entry = new LogEntry(LocalDateTime.now(), type, source, target, amount, details);
+            String logLine = formatLogEntry(entry);
 
-                try (BufferedWriter writer = new BufferedWriter(new FileWriter(LOG_FILE, true))) {
-                    writer.write(logEntry);
-                }
-
+            try (FileWriter fw = new FileWriter(LOG_FILE, true);
+                 BufferedWriter bw = new BufferedWriter(fw);
+                 PrintWriter out = new PrintWriter(bw)) {
+                out.println(logLine);
             } catch (IOException e) {
                 SavsCommonEconomy.LOGGER.error("Failed to write to economy log", e);
             }
         });
     }
 
+    private static String formatLogEntry(LogEntry entry) {
+        return String.format("[%s] [%s] %s -> %s: $%s (%s)", 
+            entry.timestamp.format(DATE_FORMAT), entry.type, entry.source, entry.target, entry.amount.toPlainString(), entry.details);
+    }
+
     public static java.util.List<LogEntry> searchLogs(String target, LocalDateTime cutoff) {
+        // Try to search from database if available
+        savage.commoneconomy.storage.EconomyStorage storage = savage.commoneconomy.EconomyManager.getStorage();
+        if (storage instanceof savage.commoneconomy.storage.SqlStorage) {
+            long cutoffTimestamp = cutoff.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+            return storage.searchLogs(target, cutoffTimestamp);
+        }
+
         if (!LOG_FILE.exists()) {
             return java.util.Collections.emptyList();
         }

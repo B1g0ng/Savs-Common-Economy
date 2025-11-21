@@ -24,6 +24,7 @@ public class SavsCommonEconomy implements ModInitializer {
 			EconomyCommands.register(dispatcher);
 			SellCommands.register(dispatcher);
 			savage.commoneconomy.command.LogCommand.register(dispatcher);
+			savage.commoneconomy.command.DebugCommands.register(dispatcher);
 			if (EconomyManager.getInstance().getConfig().enableChestShops) {
 				ShopCommands.register(dispatcher);
 			}

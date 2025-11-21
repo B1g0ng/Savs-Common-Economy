@@ -64,12 +64,37 @@ public class JsonStorage implements EconomyStorage {
     public void setBalance(UUID uuid, BigDecimal amount) {
         AccountData data = accounts.computeIfAbsent(uuid, k -> new AccountData("Unknown", manager.getConfig().defaultBalance));
         data.balance = amount;
+        data.version++;
         save();
+    }
+
+    @Override
+    public synchronized boolean setBalance(UUID uuid, BigDecimal amount, long expectedVersion) {
+        AccountData data = accounts.get(uuid);
+        if (data == null) {
+            // Account doesn't exist, create it
+            data = new AccountData("Unknown", manager.getConfig().defaultBalance);
+            accounts.put(uuid, data);
+        }
+        
+        if (data.version != expectedVersion) {
+            return false; // Optimistic lock failure
+        }
+        
+        data.balance = amount;
+        data.version++;
+        save();
+        return true;
     }
 
     @Override
     public boolean hasAccount(UUID uuid) {
         return accounts.containsKey(uuid);
+    }
+
+    @Override
+    public AccountData getAccount(UUID uuid) {
+        return accounts.get(uuid);
     }
 
     @Override
@@ -107,10 +132,19 @@ public class JsonStorage implements EconomyStorage {
     }
 
     @Override
+    public void logTransaction(long timestamp, String source, String target, BigDecimal amount, String type, String details) {
+        // JsonStorage doesn't handle logging internally, it relies on TransactionLogger's file logging
+    }
+
+    @Override
     public List<AccountData> getTopAccounts(int limit) {
         return accounts.values().stream()
                 .sorted((a, b) -> b.balance.compareTo(a.balance))
                 .limit(limit)
                 .collect(Collectors.toList());
+    }
+    @Override
+    public List<savage.commoneconomy.util.TransactionLogger.LogEntry> searchLogs(String target, long cutoffTimestamp) {
+        return Collections.emptyList(); // JsonStorage relies on file logging
     }
 }

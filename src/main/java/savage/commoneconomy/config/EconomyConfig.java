@@ -19,5 +19,10 @@ public class EconomyConfig {
         public String user = "root";
         public String password = "password";
         public String tablePrefix = "savs_eco_";
+        
+        // Connection Pool Settings
+        public int poolSize = 10;
+        public long connectionTimeout = 30000; // 30 seconds
+        public long idleTimeout = 600000; // 10 minutes
     }
 }
