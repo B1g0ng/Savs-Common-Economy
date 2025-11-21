@@ -9,13 +9,15 @@ A lightweight, **server-side only** economy mod for Minecraft 1.21.10 (Fabric). 
 *   **Offline Support**: Supports payments and administrative actions for offline players who have joined the server at least once.
 *   **Configuration**: Customizable default starting balance and currency formatting (symbol, position).
 *   **Autocompletion**: Smart tab completion for both online and offline player names.
-*   **Selectors**: Basic support for the `@s` (self) selector.
 *   **Leaderboard**: View the top 10 richest players with `/baltop`.
 *   **Bank Notes**: Withdraw physical currency as vanilla paper items that can be traded or redeemed.
 *   **Sell System**: Configurable system to allow players to check item values and sell them (optional, disabled by default).
 *   **Chest Shops**: Player-owned shops using chests and signs with dynamic stock detection (optional, enabled by default).
 *   **Transaction Logging**: Comprehensive logging of all economy transactions with a searchable in-game command.
 *   **Database Support**: Choose between JSON (default), SQLite, MySQL, or PostgreSQL for data storage.
+*   **Multi-Server Ready**: Optimistic locking prevents race conditions, connection pooling for high-traffic networks.
+*   **Performance Caching**: Caffeine-based caching for instant balance lookups and reduced database load.
+*   **Redis Pub/Sub** (Optional): Real-time cross-server cache synchronization and transaction notifications.
 
 ## Commands
 
@@ -85,6 +87,31 @@ The configuration file is located at `config/savs-common-economy/config.json`.
 *   `storage.user`: Database username (for MySQL/PostgreSQL).
 *   `storage.password`: Database password (for MySQL/PostgreSQL).
 *   `storage.tablePrefix`: Prefix for database tables (for SQL backends).
+*   `storage.poolSize`: Connection pool size (default: 10, for SQL backends).
+*   `storage.connectionTimeout`: Connection timeout in milliseconds (default: 30000).
+*   `storage.idleTimeout`: Idle connection timeout in milliseconds (default: 600000).
+
+### Redis Configuration (Optional)
+
+For multi-server networks, you can enable Redis Pub/Sub for real-time cache synchronization:
+
+```json
+"redis": {
+  "enabled": false,
+  "host": "localhost",
+  "port": 6379,
+  "password": "",
+  "channel": "savs-economy-updates",
+  "debugLogging": false
+}
+```
+
+*   `redis.enabled`: Set to `true` to enable Redis Pub/Sub (default: false).
+*   `redis.host`: Redis server hostname.
+*   `redis.port`: Redis server port (default: 6379).
+*   `redis.password`: Redis password (leave empty if no auth).
+*   `redis.channel`: Pub/Sub channel name (default: "savs-economy-updates").
+*   `redis.debugLogging`: Enable verbose Redis logging for debugging (default: false).
 
 ## Database Support
 
@@ -126,7 +153,29 @@ The mod supports multiple storage backends for economy data:
 }
 ```
 
-**Note**: For multi-server networks, all servers should point to the same database with identical configuration.
+**Note**: For multi-server networks:
+- All servers should point to the same database with identical configuration
+- Enable Redis Pub/Sub for instant cache synchronization across servers
+- Transaction safety is ensured via optimistic locking (version-based concurrency control)
+- Connection pooling is automatically configured for high-traffic environments
+
+### Multi-Server Setup (Velocity/BungeeCord)
+
+For networks with multiple Minecraft servers sharing the same economy:
+
+1. **Database**: Use MySQL or PostgreSQL (not JSON/SQLite)
+2. **Redis** (Recommended): Install Redis and enable it in config for real-time sync
+3. **Configuration**: Ensure all servers have identical database and Redis settings
+
+**With Redis enabled:**
+- Players receive transaction notifications instantly across servers
+- Balance changes are synchronized in real-time
+- Cache invalidation happens automatically
+
+**Without Redis:**
+- Balance changes are still safe (optimistic locking prevents conflicts)
+- Players see updated balances when they check `/bal`
+- Slightly higher database load (no caching between servers)
 
 ### Worth Configuration
 
@@ -203,11 +252,13 @@ If no permissions mod is installed, the mod falls back to vanilla OP levels (Lev
 ### Planned Features
 *   [ ] **Common Economy API Support**: Implement compatibility with the Common Economy API for cross-mod integration
 *   [x] **Remote Database Storage**: Add support for MySQL/PostgreSQL databases as an alternative to JSON files
-*   [ ] **Enhanced Multi-Server Support**: Improve cross-server functionality for Velocity networks:
-    *   Transaction safety (optimistic locking to prevent race conditions)
-    *   Shared shop data across servers
-    *   Centralized transaction logging in database
-    *   Connection pool tuning options
+*   [x] **Enhanced Multi-Server Support**: Improve cross-server functionality for Velocity networks:
+    *   [x] Transaction safety (optimistic locking to prevent race conditions)
+    *   [ ] Shared shop data across servers
+    *   [x] Centralized transaction logging in database
+    *   [x] Connection pool tuning options
+    *   [x] Redis Pub/Sub for real-time cache synchronization
+    *   [x] Performance caching with Caffeine
 
 ### Minor Improvements
 *   [ ] Full selector support (e.g., `@p`, `@a`, `@r`) for economy commands
