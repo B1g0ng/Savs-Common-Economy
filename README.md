@@ -51,6 +51,8 @@ A lightweight, **server-side only** economy mod for Minecraft 1.21.10 (Fabric). 
     *   `time`: Number of time units (e.g., `1`, `30`).
     *   `unit`: Time unit (`s`=seconds, `m`=minutes, `h`=hours, `d`=days).
     *   `page`: Optional page number for pagination.
+*   `/ecodebug verify`: Test database connection and transaction safety (creates a temporary test account).
+*   `/ecodebug cleanup`: Remove the test account created by `/ecodebug verify`.
 
 ## Configuration
 
@@ -244,6 +246,7 @@ If no permissions mod is installed, the mod falls back to vanilla OP levels (Lev
 *   `savscommoneconomy.admin`: Grants access to all admin features:
     *   `/givemoney`, `/takemoney`, `/setmoney`, `/resetmoney`
     *   `/ecolog` (view transaction logs)
+    *   `/ecodebug verify` and `/ecodebug cleanup` (database testing)
     *   `/shop admin` (create admin shops)
     *   **Shop Removal Override**: Ability to remove ANY player's shop.
 
