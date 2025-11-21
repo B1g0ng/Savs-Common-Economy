@@ -72,17 +72,21 @@ public class ShopTransactionHandler {
         }
         
         // Publish Redis notification to buyer (silent update for cache invalidation)
-        try {
-            BigDecimal buyerBalance = EconomyManager.getInstance().getBalance(player.getUuid());
-            savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
-                player.getUuid(),
-                buyerBalance,
-                "shop_buy",
-                "Shop",
-                null // Silent update
-            );
-        } catch (Exception e) {
-            // Redis is optional
+        // Only needed if buyer is NOT the owner (because owner already got a notification/invalidation above)
+        // OR if it is an admin shop (no owner notification)
+        if (shop.isAdmin() || !shop.getOwnerId().equals(player.getUuid())) {
+            try {
+                BigDecimal buyerBalance = EconomyManager.getInstance().getBalance(player.getUuid());
+                savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
+                    player.getUuid(),
+                    buyerBalance,
+                    "shop_buy",
+                    "Shop",
+                    null // Silent update
+                );
+            } catch (Exception e) {
+                // Redis is optional
+            }
         }
         
         // Give items to player
