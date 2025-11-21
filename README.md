@@ -17,7 +17,7 @@ A lightweight, **server-side only** economy mod for Minecraft 1.21.10 (Fabric). 
 *   **Database Support**: Choose between JSON (default), SQLite, MySQL, or PostgreSQL for data storage.
 *   **Multi-Server Ready**: Optimistic locking prevents race conditions, connection pooling for high-traffic networks.
 *   **Performance Caching**: Caffeine-based caching for instant balance lookups and reduced database load.
-*   **Redis Pub/Sub** (Optional): Real-time cross-server cache synchronization and transaction notifications.
+*   **Redis Pub/Sub** (Optional): Real-time cross-server cache synchronization and transaction notifications. **(Enhanced in v1.3.3)**
 
 ## Commands
 
