@@ -14,6 +14,7 @@ A lightweight, **server-side only** economy mod for Minecraft 1.21.10 (Fabric). 
 *   **Bank Notes**: Withdraw physical currency as vanilla paper items that can be traded or redeemed.
 *   **Sell System**: Configurable system to allow players to check item values and sell them (optional, disabled by default).
 *   **Chest Shops**: Player-owned shops using chests and signs with dynamic stock detection (optional, enabled by default).
+*   **Transaction Logging**: Comprehensive logging of all economy transactions with a searchable in-game command.
 
 ## Commands
 
@@ -42,6 +43,11 @@ A lightweight, **server-side only** economy mod for Minecraft 1.21.10 (Fabric). 
 *   `/setmoney <player> <amount>`: Set a player's balance to a specific amount.
 *   `/resetmoney <player>`: Reset a player's balance to the default starting value.
 *   `/shop create sell <price>` (then `/shop admin`): Create an Admin Shop (infinite stock).
+*   `/ecolog <target> <time> <unit> [page]`: Search transaction logs (e.g., `/ecolog * 1 h`).
+    *   `target`: Player name or `*` for all.
+    *   `time`: Number of time units (e.g., `1`, `30`).
+    *   `unit`: Time unit (`s`=seconds, `m`=minutes, `h`=hours, `d`=days).
+    *   `page`: Optional page number for pagination.
 
 ## Configuration
 
@@ -129,6 +135,7 @@ If no permissions mod is installed, the mod falls back to vanilla OP levels (Lev
 ### Admin Permissions (Default: OP Level 2)
 *   `savscommoneconomy.admin`: Grants access to all admin features:
     *   `/givemoney`, `/takemoney`, `/setmoney`, `/resetmoney`
+    *   `/ecolog` (view transaction logs)
     *   `/shop admin` (create admin shops)
     *   **Shop Removal Override**: Ability to remove ANY player's shop.
 
@@ -141,6 +148,6 @@ If no permissions mod is installed, the mod falls back to vanilla OP levels (Lev
 
 ### Minor Improvements
 *   [ ] Full selector support (e.g., `@p`, `@a`, `@r`) for economy commands
-*   [ ] Transaction history/logs
+*   [x] Transaction history/logs
 *   [ ] Configurable transaction fees
 *   [ ] Economy statistics and analytics
