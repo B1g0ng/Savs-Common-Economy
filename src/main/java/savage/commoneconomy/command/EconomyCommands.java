@@ -178,8 +178,21 @@ public class EconomyCommands {
             ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
             if (target != null) {
                 target.sendMessage(Text.literal("Received " + formattedAmount + " from " + sourcePlayer.getName().getString()));
+                // Player is local, but we still need to invalidate caches on other servers
+                try {
+                    BigDecimal newBalance = EconomyManager.getInstance().getBalance(targetUUID);
+                    savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
+                        targetUUID,
+                        newBalance,
+                        "pay",
+                        sourcePlayer.getName().getString(),
+                        null // No chat message needed, they got it locally
+                    );
+                } catch (Exception e) {
+                    // Redis is optional
+                }
             } else {
-                // Player not on this server, publish to Redis
+                // Player not on this server, publish to Redis with chat message
                 try {
                     BigDecimal newBalance = EconomyManager.getInstance().getBalance(targetUUID);
                     savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
@@ -221,6 +234,19 @@ public class EconomyCommands {
             ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
             if (target != null) {
                 target.sendMessage(Text.literal("Received " + formattedAmount + " (Admin Gift)"));
+                // Player is local, but we still need to invalidate caches on other servers
+                try {
+                    BigDecimal newBalance = EconomyManager.getInstance().getBalance(targetUUID);
+                    savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
+                        targetUUID,
+                        newBalance,
+                        "give",
+                        context.getSource().getName(),
+                        null // No chat message needed
+                    );
+                } catch (Exception e) {
+                    // Redis is optional
+                }
             } else {
                 // Player not on this server, publish to Redis
                 try {
@@ -278,6 +304,22 @@ public class EconomyCommands {
             return 0;
         } else {
             context.getSource().sendFeedback(() -> Text.literal("Took " + formattedAmount + " from " + displayName), true);
+            
+            // Publish Redis update to invalidate caches (silent)
+            try {
+                BigDecimal newBalance = EconomyManager.getInstance().getBalance(targetUUID);
+                savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
+                    targetUUID,
+                    newBalance,
+                    "take",
+                    context.getSource().getName(),
+                    null // No chat message for taking money usually, or maybe we should add one?
+                         // For now keeping it silent as per original logic which didn't send message to target
+                );
+            } catch (Exception e) {
+                // Redis is optional
+            }
+            
             savage.commoneconomy.util.TransactionLogger.log("ADMIN_TAKE", context.getSource().getName(), displayName, amount, "Admin Take");
             return 1;
         }
@@ -308,6 +350,21 @@ public class EconomyCommands {
         if (target != null) {
             target.sendMessage(Text.literal("Your balance has been set to " + formattedAmount));
         }
+        
+        // Publish Redis update
+        try {
+            BigDecimal newBalance = EconomyManager.getInstance().getBalance(targetUUID);
+            savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
+                targetUUID,
+                newBalance,
+                "set",
+                context.getSource().getName(),
+                target == null ? "Your balance has been set to " + formattedAmount : null // Send message if remote, otherwise silent
+            );
+        } catch (Exception e) {
+            // Redis is optional
+        }
+        
         savage.commoneconomy.util.TransactionLogger.log("ADMIN_SET", context.getSource().getName(), displayName, amount, "Set Balance");
         return 1;
     }
@@ -332,6 +389,19 @@ public class EconomyCommands {
         ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
         if (target != null) {
             target.sendMessage(Text.literal("Your balance has been reset to " + formattedAmount));
+        }
+        
+        // Publish Redis update
+        try {
+            savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
+                targetUUID,
+                newBalance,
+                "reset",
+                context.getSource().getName(),
+                target == null ? "Your balance has been reset to " + formattedAmount : null // Send message if remote
+            );
+        } catch (Exception e) {
+            // Redis is optional
         }
         return 1;
     }

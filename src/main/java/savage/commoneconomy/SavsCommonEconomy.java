@@ -53,7 +53,9 @@ public class SavsCommonEconomy implements ModInitializer {
 		
 		// Create account on join
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-			EconomyManager.getInstance().createAccount(handler.player.getUuid(), handler.player.getName().getString());
+			if (!EconomyManager.getInstance().hasAccount(handler.player.getUuid())) {
+				EconomyManager.getInstance().createAccount(handler.player.getUuid(), handler.player.getName().getString());
+			}
 		});
 		
 		// Register right-click handler for bank notes

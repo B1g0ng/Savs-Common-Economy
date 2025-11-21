@@ -142,6 +142,21 @@ public class SellCommands {
         if (EconomyManager.getInstance().addBalance(player.getUuid(), totalValue)) {
             player.setStackInHand(net.minecraft.util.Hand.MAIN_HAND, ItemStack.EMPTY);
             context.getSource().sendFeedback(() -> Text.literal("Sold " + count + "x " + itemId + " for " + EconomyManager.getInstance().format(totalValue)), false);
+            
+            // Publish Redis update to invalidate caches (silent)
+            try {
+                BigDecimal newBalance = EconomyManager.getInstance().getBalance(player.getUuid());
+                savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
+                    player.getUuid(),
+                    newBalance,
+                    "sell",
+                    "Server",
+                    null // Silent update for cache invalidation
+                );
+            } catch (Exception e) {
+                // Redis is optional
+            }
+            
             savage.commoneconomy.util.TransactionLogger.log("COMMAND_SELL", player.getName().getString(), "Server", totalValue, "Sold " + count + "x " + itemId);
             return 1;
         } else {
@@ -189,6 +204,21 @@ public class SellCommands {
             
             int finalTotalCount = totalCount;
             context.getSource().sendFeedback(() -> Text.literal("Sold all " + finalTotalCount + "x " + itemId + " for " + EconomyManager.getInstance().format(totalValue)), false);
+            
+            // Publish Redis update to invalidate caches (silent)
+            try {
+                BigDecimal newBalance = EconomyManager.getInstance().getBalance(player.getUuid());
+                savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
+                    player.getUuid(),
+                    newBalance,
+                    "sell",
+                    "Server",
+                    null // Silent update for cache invalidation
+                );
+            } catch (Exception e) {
+                // Redis is optional
+            }
+            
             savage.commoneconomy.util.TransactionLogger.log("COMMAND_SELL", player.getName().getString(), "Server", totalValue, "Sold all " + finalTotalCount + "x " + itemId);
             return 1;
         } else {
