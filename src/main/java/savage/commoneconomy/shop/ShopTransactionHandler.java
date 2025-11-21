@@ -55,6 +55,20 @@ public class ShopTransactionHandler {
         EconomyManager.getInstance().removeBalance(player.getUuid(), totalPrice);
         if (!shop.isAdmin()) {
             EconomyManager.getInstance().addBalance(shop.getOwnerId(), totalPrice);
+            
+            // Publish Redis notification to shop owner if they're on another server
+            try {
+                BigDecimal ownerBalance = EconomyManager.getInstance().getBalance(shop.getOwnerId());
+                savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
+                    shop.getOwnerId(),
+                    ownerBalance,
+                    "shop_buy",
+                    player.getName().getString(),
+                    "Received " + EconomyManager.getInstance().format(totalPrice) + " from shop sale"
+                );
+            } catch (Exception e) {
+                // Redis is optional
+            }
         }
         
         // Give items to player
@@ -129,6 +143,20 @@ public class ShopTransactionHandler {
             EconomyManager.getInstance().removeBalance(shop.getOwnerId(), totalPrice);
         }
         EconomyManager.getInstance().addBalance(player.getUuid(), totalPrice);
+        
+        // Publish Redis notification to player if they're on another server
+        try {
+            BigDecimal playerBalance = EconomyManager.getInstance().getBalance(player.getUuid());
+            savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
+                player.getUuid(),
+                playerBalance,
+                "shop_sell",
+                shop.isAdmin() ? "Admin Shop" : "Shop",
+                "Received " + EconomyManager.getInstance().format(totalPrice) + " from selling items"
+            );
+        } catch (Exception e) {
+            // Redis is optional
+        }
         
         // Update sign
         BlockPos signPos = ShopSignHelper.findSignForChest(world, shop.getChestLocation());
