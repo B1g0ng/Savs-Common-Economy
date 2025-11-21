@@ -288,4 +288,17 @@ public abstract class SqlStorage implements EconomyStorage {
         }
         return accounts;
     }
+    @Override
+    public void deleteAccount(UUID uuid) {
+        String sql = "DELETE FROM " + tablePrefix + "accounts WHERE uuid = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, uuid.toString());
+            stmt.executeUpdate();
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }

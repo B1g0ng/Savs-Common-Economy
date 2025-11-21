@@ -16,21 +16,25 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DebugCommands {
+    // Fixed UUID for test user to prevent database pollution
+    private static final UUID TEST_UUID = UUID.nameUUIDFromBytes("TestUser".getBytes());
+    
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(CommandManager.literal("ecodebug")
                 .requires(source -> source.hasPermissionLevel(4))
                 .then(CommandManager.literal("verify")
-                        .executes(DebugCommands::runVerification)));
+                        .executes(DebugCommands::runVerification))
+                .then(CommandManager.literal("cleanup")
+                        .executes(DebugCommands::runCleanup)));
     }
 
     private static int runVerification(CommandContext<ServerCommandSource> context) {
         ServerCommandSource source = context.getSource();
         source.sendFeedback(() -> Text.literal("Starting verification..."), false);
 
-        UUID testUuid = UUID.randomUUID();
         EconomyManager manager = EconomyManager.getInstance();
-        manager.createAccount(testUuid, "TestUser");
-        manager.setBalance(testUuid, BigDecimal.ZERO);
+        manager.createAccount(TEST_UUID, "TestUser");
+        manager.setBalance(TEST_UUID, BigDecimal.ZERO);
 
         int threadCount = 10;
         int updatesPerThread = 10;
@@ -46,7 +50,7 @@ public class DebugCommands {
             executor.submit(() -> {
                 try {
                     for (int j = 0; j < updatesPerThread; j++) {
-                        if (manager.addBalance(testUuid, amountPerUpdate)) {
+                        if (manager.addBalance(TEST_UUID, amountPerUpdate)) {
                             successCount.incrementAndGet();
                         }
                     }
@@ -63,7 +67,7 @@ public class DebugCommands {
         }
 
         long duration = System.currentTimeMillis() - startTime;
-        BigDecimal finalBalance = manager.getBalance(testUuid);
+        BigDecimal finalBalance = manager.getBalance(TEST_UUID);
         BigDecimal expectedBalance = amountPerUpdate.multiply(BigDecimal.valueOf(threadCount * updatesPerThread));
 
         source.sendFeedback(() -> Text.literal("Verification completed in " + duration + "ms"), false);
@@ -87,8 +91,21 @@ public class DebugCommands {
             source.sendFeedback(() -> Text.literal("§7(Some updates failed due to high contention, which is expected. Data is safe.)"), false);
         }
         
-        // Verify logs
-        // We can't easily check DB logs here without exposing storage methods, but we can check if no errors occurred.
+        source.sendFeedback(() -> Text.literal("§7Run '/ecodebug cleanup' to remove the test account."), false);
+        
+        return 1;
+    }
+    
+    private static int runCleanup(CommandContext<ServerCommandSource> context) {
+        ServerCommandSource source = context.getSource();
+        EconomyManager manager = EconomyManager.getInstance();
+        
+        if (manager.hasAccount(TEST_UUID)) {
+            manager.deleteAccount(TEST_UUID);
+            source.sendFeedback(() -> Text.literal("§aTestUser account deleted successfully!"), false);
+        } else {
+            source.sendFeedback(() -> Text.literal("§eTestUser account does not exist."), false);
+        }
         
         return 1;
     }

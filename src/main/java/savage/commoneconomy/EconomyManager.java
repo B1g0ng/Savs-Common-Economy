@@ -39,9 +39,30 @@ public class EconomyManager {
         return instance;
     }
 
+    // Caching
+    private final com.github.benmanes.caffeine.cache.Cache<UUID, AccountData> accountCache;
+    private final com.github.benmanes.caffeine.cache.Cache<String, UUID> uuidCache;
+    private final com.github.benmanes.caffeine.cache.Cache<String, java.util.List<String>> offlineNamesCache;
+
     private EconomyManager() {
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         loadConfig();
+        
+        // Initialize Caches
+        this.accountCache = com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
+                .maximumSize(10000)
+                .expireAfterWrite(10, java.util.concurrent.TimeUnit.MINUTES)
+                .build();
+                
+        this.uuidCache = com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
+                .maximumSize(10000)
+                .expireAfterWrite(1, java.util.concurrent.TimeUnit.HOURS)
+                .build();
+                
+        this.offlineNamesCache = com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
+                .maximumSize(1) // Singleton cache
+                .expireAfterWrite(1, java.util.concurrent.TimeUnit.MINUTES)
+                .build();
         
         String type = config.storage.type.toUpperCase();
         switch (type) {
@@ -94,24 +115,59 @@ public class EconomyManager {
     }
 
     public BigDecimal getBalance(UUID uuid) {
-        return storage.getBalance(uuid);
+        AccountData data = accountCache.getIfPresent(uuid);
+        if (data != null) {
+            return data.balance;
+        }
+        
+        // Cache miss, load from storage
+        BigDecimal balance = storage.getBalance(uuid);
+        // We need version to cache properly, but getBalance only returns BigDecimal.
+        // Ideally we should use getAccountData to populate cache.
+        // For now, let's fetch full data if possible, or just cache the balance with a dummy version/name if we can't get full data easily without changing storage interface again.
+        // Actually, we added getAccount to storage interface earlier!
+        data = storage.getAccount(uuid);
+        if (data != null) {
+            accountCache.put(uuid, data);
+            return data.balance;
+        } else {
+            // Account doesn't exist, return default but don't cache null unless we use Optional
+            return config.defaultBalance;
+        }
     }
 
     public void setBalance(UUID uuid, BigDecimal amount) {
         storage.setBalance(uuid, amount);
+        accountCache.invalidate(uuid); // Invalidate to force reload next time (or we could update it if we knew the version)
     }
 
     public boolean addBalance(UUID uuid, BigDecimal amount) {
         int retries = 10;
         while (retries > 0) {
             // Reload account data to get latest version
-            AccountData data = getAccountData(uuid);
+            AccountData data = getAccountData(uuid); // This now checks cache first
             BigDecimal current = data != null ? data.balance : config.defaultBalance;
             long version = data != null ? data.version : 0;
             
             if (storage.setBalance(uuid, current.add(amount), version)) {
+                // Update cache on success
+                if (data != null) {
+                    data.balance = current.add(amount);
+                    data.version++;
+                    accountCache.put(uuid, data);
+                } else {
+                    // New account created implicitly? Storage.setBalance usually updates existing.
+                    // If account didn't exist, optimistic locking with version 0 might fail or succeed depending on implementation.
+                    // Our SQL implementation handles insert if version is 0? No, it uses UPDATE.
+                    // So we probably need createAccount first if data is null.
+                    // But for now, let's just invalidate.
+                    accountCache.invalidate(uuid);
+                }
                 return true;
             }
+            // On failure, invalidate cache to ensure we get fresh data from DB next retry
+            accountCache.invalidate(uuid);
+            
             retries--;
             try {
                 Thread.sleep(10 + (long)(Math.random() * 10)); // Small random backoff
@@ -132,11 +188,22 @@ public class EconomyManager {
             
             if (current.compareTo(amount) >= 0) {
                 if (storage.setBalance(uuid, current.subtract(amount), version)) {
+                     // Update cache on success
+                    if (data != null) {
+                        data.balance = current.subtract(amount);
+                        data.version++;
+                        accountCache.put(uuid, data);
+                    } else {
+                        accountCache.invalidate(uuid);
+                    }
                     return true;
                 }
             } else {
                 return false; // Insufficient funds
             }
+            // On failure, invalidate cache
+            accountCache.invalidate(uuid);
+            
             retries--;
             try {
                 Thread.sleep(10 + (long)(Math.random() * 10)); // Small random backoff
@@ -148,22 +215,40 @@ public class EconomyManager {
     }
     
     private AccountData getAccountData(UUID uuid) {
-        // Helper to get raw account data including version
-        // This requires exposing a way to get AccountData from storage or reloading
-        // For now, we can just use getBalance but we need the version.
-        // Let's add a getAccount method to storage interface or just rely on implementation details
-        // Actually, we need to add getAccount to EconomyStorage interface to do this properly.
-        // For now, let's implement a workaround or update interface.
-        // Updating interface is better.
-        return storage.getAccount(uuid);
+        AccountData data = accountCache.getIfPresent(uuid);
+        if (data != null) {
+            return data;
+        }
+        
+        data = storage.getAccount(uuid);
+        if (data != null) {
+            accountCache.put(uuid, data);
+        }
+        return data;
     }
 
     public boolean hasAccount(UUID uuid) {
+        if (accountCache.getIfPresent(uuid) != null) return true;
         return storage.hasAccount(uuid);
     }
 
     public void createAccount(UUID uuid, String name) {
         storage.createAccount(uuid, name);
+        // Cache the new account
+        accountCache.put(uuid, new AccountData(name, config.defaultBalance, 0));
+        uuidCache.put(name.toLowerCase(), uuid);
+        offlineNamesCache.invalidateAll(); // Invalidate names list
+    }
+
+    public void deleteAccount(UUID uuid) {
+        storage.deleteAccount(uuid);
+        // Invalidate all caches
+        accountCache.invalidate(uuid);
+        AccountData data = accountCache.getIfPresent(uuid);
+        if (data != null) {
+            uuidCache.invalidate(data.name.toLowerCase());
+        }
+        offlineNamesCache.invalidateAll();
     }
 
     public void resetBalance(UUID uuid) {
@@ -171,11 +256,23 @@ public class EconomyManager {
     }
 
     public UUID getUUID(String name) {
-        return storage.getUUID(name);
+        UUID uuid = uuidCache.getIfPresent(name.toLowerCase());
+        if (uuid != null) return uuid;
+        
+        uuid = storage.getUUID(name);
+        if (uuid != null) {
+            uuidCache.put(name.toLowerCase(), uuid);
+        }
+        return uuid;
     }
 
     public java.util.Collection<String> getOfflinePlayerNames() {
-        return storage.getOfflinePlayerNames();
+        java.util.List<String> names = offlineNamesCache.getIfPresent("all");
+        if (names != null) return names;
+        
+        names = new java.util.ArrayList<>(storage.getOfflinePlayerNames());
+        offlineNamesCache.put("all", names);
+        return names;
     }
 
     public String format(BigDecimal amount) {

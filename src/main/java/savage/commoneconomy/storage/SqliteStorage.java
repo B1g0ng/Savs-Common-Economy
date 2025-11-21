@@ -22,15 +22,13 @@ public class SqliteStorage extends SqlStorage {
 
     @Override
     protected void setupDataSource() {
-        SQLiteConfig config = new SQLiteConfig();
-        config.setJournalMode(SQLiteConfig.JournalMode.WAL);
-        config.setSynchronous(SQLiteConfig.SynchronousMode.NORMAL);
-        
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl("jdbc:sqlite:" + databaseFile.getAbsolutePath());
-        hikariConfig.setDataSourceClassName("org.sqlite.SQLiteDataSource");
-        hikariConfig.addDataSourceProperty("url", "jdbc:sqlite:" + databaseFile.getAbsolutePath());
         hikariConfig.setDriverClassName("org.sqlite.JDBC");
+        
+        // SQLite-specific optimizations
+        hikariConfig.addDataSourceProperty("journal_mode", "WAL");
+        hikariConfig.addDataSourceProperty("synchronous", "NORMAL");
         
         // Apply pool settings
         hikariConfig.setMaximumPoolSize(manager.getConfig().storage.poolSize);

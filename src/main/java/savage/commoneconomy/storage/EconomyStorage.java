@@ -26,4 +26,6 @@ public interface EconomyStorage {
     void logTransaction(long timestamp, String source, String target, BigDecimal amount, String type, String details);
     
     List<savage.commoneconomy.util.TransactionLogger.LogEntry> searchLogs(String target, long cutoffTimestamp);
+    
+    void deleteAccount(UUID uuid);
 }

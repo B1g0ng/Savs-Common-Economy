@@ -147,4 +147,9 @@ public class JsonStorage implements EconomyStorage {
     public List<savage.commoneconomy.util.TransactionLogger.LogEntry> searchLogs(String target, long cutoffTimestamp) {
         return Collections.emptyList(); // JsonStorage relies on file logging
     }
+    @Override
+    public void deleteAccount(UUID uuid) {
+        accounts.remove(uuid);
+        save();
+    }
 }
