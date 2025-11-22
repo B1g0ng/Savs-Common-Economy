@@ -25,7 +25,45 @@ public class DebugCommands {
                 .then(CommandManager.literal("verify")
                         .executes(DebugCommands::runVerification))
                 .then(CommandManager.literal("cleanup")
-                        .executes(DebugCommands::runCleanup)));
+                        .executes(DebugCommands::runCleanup))
+                .then(CommandManager.literal("api")
+                        .executes(context -> {
+                            try {
+                                var source = context.getSource();
+                                var player = source.getPlayer();
+                                if (player == null) {
+                                    source.sendFeedback(() -> Text.of("Player only command"), false);
+                                    return 1;
+                                }
+
+                                var provider = eu.pb4.common.economy.api.CommonEconomy.getProvider("savs_common_economy");
+                                if (provider == null) {
+                                    source.sendFeedback(() -> Text.of("Provider not found!"), false);
+                                    return 0;
+                                }
+
+                                var account = provider.getAccount(source.getServer(), player.getGameProfile(), "dollar");
+                                if (account == null) {
+                                    // Try default account
+                                    var accounts = provider.getAccounts(source.getServer(), player.getGameProfile());
+                                    if (!accounts.isEmpty()) {
+                                        account = accounts.iterator().next();
+                                    }
+                                }
+
+                                if (account == null) {
+                                    source.sendFeedback(() -> Text.of("Account not found!"), false);
+                                    return 0;
+                                }
+
+                                long balance = account.balance();
+                                source.sendFeedback(() -> Text.of("API Balance: $" + balance), false);
+                                return 1;
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                return 0;
+                            }
+                        })));
     }
 
     private static int runVerification(CommandContext<ServerCommandSource> context) {
@@ -64,11 +102,13 @@ public class DebugCommands {
             latch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
+        } finally {
+            executor.shutdown();
         }
 
         long duration = System.currentTimeMillis() - startTime;
         BigDecimal finalBalance = manager.getBalance(TEST_UUID);
-        BigDecimal expectedBalance = amountPerUpdate.multiply(BigDecimal.valueOf(threadCount * updatesPerThread));
+        
 
         source.sendFeedback(() -> Text.literal("Verification completed in " + duration + "ms"), false);
         source.sendFeedback(() -> Text.literal("Threads: " + threadCount + ", Updates/Thread: " + updatesPerThread), false);

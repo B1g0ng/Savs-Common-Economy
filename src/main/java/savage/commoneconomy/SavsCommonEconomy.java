@@ -19,6 +19,11 @@ public class SavsCommonEconomy implements ModInitializer {
 	public void onInitialize() {
 		LOGGER.info("Initializing Savs Common Economy...");
 
+		// Register Common Economy Provider
+		eu.pb4.common.economy.api.CommonEconomy.register("savs_common_economy", savage.commoneconomy.integration.SavsEconomyProvider.INSTANCE);
+
+		LOGGER.info("Savs Common Economy initialized.");
+
 		// Register commands
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			EconomyCommands.register(dispatcher);

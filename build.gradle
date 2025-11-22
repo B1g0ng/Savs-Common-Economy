@@ -69,11 +69,17 @@ dependencies {
 	// Lettuce (Redis Client)
 	modImplementation "io.lettuce:lettuce-core:6.3.0.RELEASE"
 	include "io.lettuce:lettuce-core:6.3.0.RELEASE"
+
+	// Common Economy API
+	modImplementation "eu.pb4:common-economy-api:1.1.1"
+	include "eu.pb4:common-economy-api:1.1.1"
 }
 
 repositories {
 	maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
 	maven { url 'https://maven.terraformersmc.com/releases/' }
+	maven { url 'https://jitpack.io' }
+	maven { url 'https://maven.nucleoid.xyz/' }
 }
 
 processResources {
