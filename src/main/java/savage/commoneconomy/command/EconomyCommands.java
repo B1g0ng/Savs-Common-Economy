@@ -170,8 +170,8 @@ public class EconomyCommands {
             return 0;
         }
 
-        if (EconomyManager.getInstance().removeBalance(sourcePlayer.getUuid(), amount)) {
-            EconomyManager.getInstance().addBalance(targetUUID, amount);
+        if (EconomyManager.getInstance().removeBalance(sourcePlayer.getUuid(), amount, false)) {
+            EconomyManager.getInstance().addBalance(targetUUID, amount, false);
             String formattedAmount = EconomyManager.getInstance().format(amount);
             context.getSource().sendFeedback(() -> Text.literal("Paid " + formattedAmount + " to " + displayName), false);
             
@@ -228,7 +228,7 @@ public class EconomyCommands {
             return 0;
         }
 
-        if (EconomyManager.getInstance().addBalance(targetUUID, amount)) {
+        if (EconomyManager.getInstance().addBalance(targetUUID, amount, false)) {
             context.getSource().sendFeedback(() -> Text.literal("Gave " + formattedAmount + " to " + displayName), true);
             
             ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
@@ -284,7 +284,7 @@ public class EconomyCommands {
             return 0;
         }
 
-        if (!EconomyManager.getInstance().removeBalance(targetUUID, amount)) {
+        if (!EconomyManager.getInstance().removeBalance(targetUUID, amount, false)) {
             // If remove fails, it could be insufficient funds OR concurrency failure.
             // Ideally removeBalance should distinguish, but for now we assume if it returns false it might be funds or error.
             // However, for admin take, we might want to force set to 0 if funds are low, but removeBalance handles logic.
@@ -343,7 +343,7 @@ public class EconomyCommands {
         // Manager.setBalance is void. I should update Manager to return boolean or handle retries for setBalance too.
         // Wait, Manager.setBalance calls storage.setBalance which is void in the interface?
         // Let's check EconomyManager.java again.
-        EconomyManager.getInstance().setBalance(targetUUID, amount);
+        EconomyManager.getInstance().setBalance(targetUUID, amount, false);
         context.getSource().sendFeedback(() -> Text.literal("Set " + displayName + "'s balance to " + formattedAmount), true);
         
         ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
