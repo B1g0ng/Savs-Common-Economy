@@ -50,6 +50,7 @@ public class SavsEconomyAccount implements EconomyAccount {
     @Override
     public void setBalance(long value) {
         EconomyManager.getInstance().setBalance(profile.id(), BigDecimal.valueOf(value));
+        sendFeedback("§e[Economy] Balance set to " + currency.formatValue(value, true));
     }
 
     @Override
@@ -62,7 +63,6 @@ public class SavsEconomyAccount implements EconomyAccount {
         }
     }
 
-    @Override
     public EconomyTransaction decreaseBalance(long value) {
         long current = balance();
         if (EconomyManager.getInstance().removeBalance(profile.id(), BigDecimal.valueOf(value))) {
@@ -87,7 +87,12 @@ public class SavsEconomyAccount implements EconomyAccount {
         if (server != null) {
             net.minecraft.server.network.ServerPlayerEntity player = server.getPlayerManager().getPlayer(profile.id());
             if (player != null) {
-                player.sendMessage(Text.literal(message), false);
+                var config = EconomyManager.getInstance().getConfig();
+                if (config.apiNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.ACTION_BAR) {
+                    player.sendMessage(Text.literal(message), true);
+                } else if (config.apiNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.CHAT) {
+                    player.sendMessage(Text.literal(message), false);
+                }
             }
         }
     }

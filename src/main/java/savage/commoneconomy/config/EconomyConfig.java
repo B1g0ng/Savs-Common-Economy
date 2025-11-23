@@ -12,18 +12,16 @@ public class EconomyConfig {
     public StorageConfig storage = new StorageConfig();
 
     public static class StorageConfig {
-        public String type = "JSON"; // JSON, SQLITE, MYSQL, POSTGRESQL
+        public StorageType type = StorageType.JSON;
         public String host = "localhost";
         public int port = 3306;
         public String database = "savs_economy";
         public String user = "root";
         public String password = "password";
         public String tablePrefix = "savs_eco_";
-        
-        // Connection Pool Settings
         public int poolSize = 10;
-        public long connectionTimeout = 30000; // 30 seconds
-        public long idleTimeout = 600000; // 10 minutes
+        public long connectionTimeout = 30000;
+        public long idleTimeout = 600000;
     }
     
     public RedisConfig redis = new RedisConfig();
@@ -34,6 +32,22 @@ public class EconomyConfig {
         public int port = 6379;
         public String password = "";
         public String channel = "savs-economy-updates";
-        public boolean debugLogging = false; // Set to true to see detailed Redis messages in logs
+        public boolean debugLogging = false; 
+    }
+
+    public NotificationMode apiNotificationMode = NotificationMode.ACTION_BAR;
+    public NotificationMode commandNotificationMode = NotificationMode.CHAT;
+
+    public enum NotificationMode {
+        CHAT,
+        ACTION_BAR,
+        NONE
+    }
+
+    public enum StorageType {
+        JSON,
+        SQLITE,
+        MYSQL,
+        POSTGRESQL
     }
 }

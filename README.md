@@ -79,8 +79,21 @@ The configuration file is located at `config/savs-common-economy/config.json`.
     "database": "savs_economy",
     "user": "root",
     "password": "password",
-    "tablePrefix": "savs_eco_"
-  }
+    "tablePrefix": "savs_eco_",
+    "poolSize": 10,
+    "connectionTimeout": 30000,
+    "idleTimeout": 600000
+  },
+  "redis": {
+    "enabled": false,
+    "host": "localhost",
+    "port": 6379,
+    "password": "",
+    "channel": "savs-economy-updates",
+    "debugLogging": false
+  },
+  "apiNotificationMode": "ACTION_BAR",
+  "commandNotificationMode": "CHAT"
 }
 ```
 
@@ -99,6 +112,14 @@ The configuration file is located at `config/savs-common-economy/config.json`.
 *   `storage.poolSize`: Connection pool size (default: 10, for SQL backends).
 *   `storage.connectionTimeout`: Connection timeout in milliseconds (default: 30000).
 *   `storage.idleTimeout`: Idle connection timeout in milliseconds (default: 600000).
+
+### Notification Settings
+*   `apiNotificationMode`: Controls generic notifications (e.g., "Balance updated") triggered by other mods via the API.
+    *   Options: `CHAT`, `ACTION_BAR`, `NONE`.
+    *   Default: `ACTION_BAR` (Recommended to reduce spam).
+*   `commandNotificationMode`: Controls feedback for direct commands (e.g., `/pay`, `/givemoney`).
+    *   Options: `CHAT`, `ACTION_BAR`, `NONE`.
+    *   Default: `CHAT`.
 
 ### Redis Configuration (Optional)
 

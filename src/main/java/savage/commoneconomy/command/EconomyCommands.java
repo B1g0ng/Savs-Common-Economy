@@ -151,6 +151,23 @@ public class EconomyCommands {
         return 1;
     }
 
+    private static void sendCommandFeedback(CommandContext<ServerCommandSource> context, String message, boolean broadcastToOps) {
+        var config = EconomyManager.getInstance().getConfig();
+        if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.ACTION_BAR) {
+            context.getSource().sendFeedback(() -> Text.literal(message), false); // Commands usually need feedback, but maybe we can suppress?
+            // Actually, for commands, the sender usually EXPECTS chat feedback.
+            // But if they chose ACTION_BAR, we should try to use it.
+            // However, CommandSource.sendFeedback doesn't support Action Bar easily without casting to Player.
+            if (context.getSource().getEntity() instanceof ServerPlayerEntity player) {
+                player.sendMessage(Text.literal(message), true);
+            } else {
+                context.getSource().sendFeedback(() -> Text.literal(message), broadcastToOps);
+            }
+        } else if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.CHAT) {
+            context.getSource().sendFeedback(() -> Text.literal(message), broadcastToOps);
+        }
+    }
+
     private static int pay(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity sourcePlayer = context.getSource().getPlayerOrThrow();
         String targetName = StringArgumentType.getString(context, "target");
@@ -173,11 +190,20 @@ public class EconomyCommands {
         if (EconomyManager.getInstance().removeBalance(sourcePlayer.getUuid(), amount, false)) {
             EconomyManager.getInstance().addBalance(targetUUID, amount, false);
             String formattedAmount = EconomyManager.getInstance().format(amount);
-            context.getSource().sendFeedback(() -> Text.literal("Paid " + formattedAmount + " to " + displayName), false);
+            sendCommandFeedback(context, "Paid " + formattedAmount + " to " + displayName, false);
             
             ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
             if (target != null) {
-                target.sendMessage(Text.literal("Received " + formattedAmount + " from " + sourcePlayer.getName().getString()));
+                // Check notification mode for receiver too? Usually receiver gets generic API notification if enabled.
+                // But this is a specific "You received X from Y" message.
+                // Let's respect commandNotificationMode for this specific feedback as well.
+                var config = EconomyManager.getInstance().getConfig();
+                if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.ACTION_BAR) {
+                    target.sendMessage(Text.literal("Received " + formattedAmount + " from " + sourcePlayer.getName().getString()), true);
+                } else if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.CHAT) {
+                    target.sendMessage(Text.literal("Received " + formattedAmount + " from " + sourcePlayer.getName().getString()), false);
+                }
+                
                 // Player is local, but we still need to invalidate caches on other servers
                 try {
                     BigDecimal newBalance = EconomyManager.getInstance().getBalance(targetUUID);
@@ -229,11 +255,17 @@ public class EconomyCommands {
         }
 
         if (EconomyManager.getInstance().addBalance(targetUUID, amount, false)) {
-            context.getSource().sendFeedback(() -> Text.literal("Gave " + formattedAmount + " to " + displayName), true);
+            sendCommandFeedback(context, "Gave " + formattedAmount + " to " + displayName, true);
             
             ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
             if (target != null) {
-                target.sendMessage(Text.literal("Received " + formattedAmount + " (Admin Gift)"));
+                var config = EconomyManager.getInstance().getConfig();
+                if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.ACTION_BAR) {
+                    target.sendMessage(Text.literal("Received " + formattedAmount + " (Admin Gift)"), true);
+                } else if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.CHAT) {
+                    target.sendMessage(Text.literal("Received " + formattedAmount + " (Admin Gift)"), false);
+                }
+                
                 // Player is local, but we still need to invalidate caches on other servers
                 try {
                     BigDecimal newBalance = EconomyManager.getInstance().getBalance(targetUUID);
@@ -285,25 +317,10 @@ public class EconomyCommands {
         }
 
         if (!EconomyManager.getInstance().removeBalance(targetUUID, amount, false)) {
-            // If remove fails, it could be insufficient funds OR concurrency failure.
-            // Ideally removeBalance should distinguish, but for now we assume if it returns false it might be funds or error.
-            // However, for admin take, we might want to force set to 0 if funds are low, but removeBalance handles logic.
-            // Wait, my previous implementation of removeBalance returns false for insufficient funds OR retries exhausted.
-            // Let's check balance first to distinguish? No, that's race condition.
-            // For now, let's just report failure.
-            // Actually, the previous code had a fallback:
-            /*
-            if (!EconomyManager.getInstance().removeBalance(targetUUID, amount)) {
-                EconomyManager.getInstance().setBalance(targetUUID, BigDecimal.ZERO);
-                context.getSource().sendFeedback(() -> Text.literal("Took as much as possible from " + displayName + " (now " + EconomyManager.getInstance().format(BigDecimal.ZERO) + ")"), true);
-            }
-            */
-            // This fallback is dangerous if it was a concurrency failure.
-            // We should probably just report failure.
             context.getSource().sendError(Text.literal("Could not take money (Insufficient funds or transaction failed)."));
             return 0;
         } else {
-            context.getSource().sendFeedback(() -> Text.literal("Took " + formattedAmount + " from " + displayName), true);
+            sendCommandFeedback(context, "Took " + formattedAmount + " from " + displayName, true);
             
             // Publish Redis update to invalidate caches (silent)
             try {
@@ -313,8 +330,7 @@ public class EconomyCommands {
                     newBalance,
                     "take",
                     context.getSource().getName(),
-                    null // No chat message for taking money usually, or maybe we should add one?
-                         // For now keeping it silent as per original logic which didn't send message to target
+                    null 
                 );
             } catch (Exception e) {
                 // Redis is optional
@@ -339,16 +355,17 @@ public class EconomyCommands {
             return 0;
         }
 
-        // setBalance in Manager is void? No, I need to check Manager.
-        // Manager.setBalance is void. I should update Manager to return boolean or handle retries for setBalance too.
-        // Wait, Manager.setBalance calls storage.setBalance which is void in the interface?
-        // Let's check EconomyManager.java again.
         EconomyManager.getInstance().setBalance(targetUUID, amount, false);
-        context.getSource().sendFeedback(() -> Text.literal("Set " + displayName + "'s balance to " + formattedAmount), true);
+        sendCommandFeedback(context, "Set " + displayName + "'s balance to " + formattedAmount, true);
         
         ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
         if (target != null) {
-            target.sendMessage(Text.literal("Your balance has been set to " + formattedAmount));
+            var config = EconomyManager.getInstance().getConfig();
+            if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.ACTION_BAR) {
+                target.sendMessage(Text.literal("Your balance has been set to " + formattedAmount), true);
+            } else if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.CHAT) {
+                target.sendMessage(Text.literal("Your balance has been set to " + formattedAmount), false);
+            }
         }
         
         // Publish Redis update
@@ -384,11 +401,16 @@ public class EconomyCommands {
         BigDecimal newBalance = EconomyManager.getInstance().getBalance(targetUUID);
         String formattedAmount = EconomyManager.getInstance().format(newBalance);
 
-        context.getSource().sendFeedback(() -> Text.literal("Reset " + displayName + "'s balance to " + formattedAmount), true);
+        sendCommandFeedback(context, "Reset " + displayName + "'s balance to " + formattedAmount, true);
         
         ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
         if (target != null) {
-            target.sendMessage(Text.literal("Your balance has been reset to " + formattedAmount));
+            var config = EconomyManager.getInstance().getConfig();
+            if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.ACTION_BAR) {
+                target.sendMessage(Text.literal("Your balance has been reset to " + formattedAmount), true);
+            } else if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.CHAT) {
+                target.sendMessage(Text.literal("Your balance has been reset to " + formattedAmount), false);
+            }
         }
         
         // Publish Redis update
@@ -428,7 +450,7 @@ public class EconomyCommands {
                             .formatted(net.minecraft.util.Formatting.GREEN));
 
             player.getInventory().offerOrDrop(note);
-            context.getSource().sendFeedback(() -> Text.literal("Withdrew " + EconomyManager.getInstance().format(amount) + " as a bank note."), false);
+            sendCommandFeedback(context, "Withdrew " + EconomyManager.getInstance().format(amount) + " as a bank note.", false);
             savage.commoneconomy.util.TransactionLogger.log("WITHDRAW", player.getName().getString(), "Bank Note", amount, "Withdrawal");
             return 1;
         } else {
