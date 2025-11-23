@@ -7,7 +7,7 @@ A lightweight, **server-side only** economy mod for Minecraft 1.21.10 (Fabric), 
 *   **Economy System**: Tracks player balances with flexible storage options (JSON, SQLite, MySQL, PostgreSQL).
 *   **Server-Side Only**: No client installation required - fully compatible with vanilla clients.
 *   **Offline Support**: Supports payments and administrative actions for offline players who have joined the server at least once.
-*   **Common Economy API**: Full support for the [Common Economy API](https://github.com/Patbox/common-economy-api), allowing seamless integration with other mods like [Universal Shops](https://modrinth.com/mod/universal-shops), and other mods using the API.
+*   **Common Economy API**: Full support for the [Common Economy API](https://github.com/Patbox/common-economy-api), allowing seamless integration with other mods like [Universal Shops](https://modrinth.com/mod/universal-shops), [Mob Money](https://modrinth.com/mod/mob-money), and other mods using the API.
 *   **Configuration**: Customizable default starting balance and currency formatting (symbol, position).
 *   **Autocompletion**: Smart tab completion for both online and offline player names.
 *   **Leaderboard**: View the top 10 richest players with `/baltop`.
@@ -21,8 +21,10 @@ A lightweight, **server-side only** economy mod for Minecraft 1.21.10 (Fabric), 
 *   **Redis Pub/Sub** (Optional): Real-time cross-server cache synchronization and transaction notifications.
 
 
-## Confirmed compatability:
+## Confirmed compatibility:
 [Universal Shops](https://modrinth.com/mod/universal-shops)
+[Mob Money](https://modrinth.com/mod/mob-money)
+
 
 ## Commands
 
