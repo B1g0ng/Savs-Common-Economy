@@ -39,8 +39,8 @@ dependencies {
 	include "me.lucko:fabric-permissions-api:0.5.0"
 
 	// Savs DB Core - provides database and Redis functionality (includes Caffeine, HikariCP, etc.)
-	modImplementation "savage.savdbcore:savdbcore:1.0.0"
-	include "savage.savdbcore:savdbcore:1.0.0"
+	modImplementation "com.github.xSaVageAU:SavDBCore:v1.0.0"
+	include "com.github.xSaVageAU:SavDBCore:v1.0.0"
 
 	// Compile-time dependencies (provided by savdbcore at runtime via JAR-in-JAR)
 	// These are needed for compilation but NOT included separately
@@ -59,7 +59,6 @@ repositories {
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
 	mavenCentral() // For Caffeine and HikariCP
-	mavenLocal() // For savdbcore
 	maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
 	maven { url 'https://maven.terraformersmc.com/releases/' }
 	maven { url 'https://jitpack.io' }
