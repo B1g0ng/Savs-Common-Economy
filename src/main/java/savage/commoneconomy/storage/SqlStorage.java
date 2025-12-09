@@ -1,7 +1,5 @@
 package savage.commoneconomy.storage;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 import savage.commoneconomy.EconomyManager.AccountData;
 
 import java.math.BigDecimal;
@@ -14,20 +12,20 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-public abstract class SqlStorage implements EconomyStorage {
-    protected HikariDataSource dataSource;
-    protected final String tablePrefix;
+/**
+ * Economy-specific SQL storage base class.
+ * Extends savdbcore's SqlStorage and adds economy-specific functionality.
+ */
+public abstract class SqlStorage extends savage.savdbcore.storage.SqlStorage implements EconomyStorage {
     protected final savage.commoneconomy.EconomyManager manager;
 
     public SqlStorage(savage.commoneconomy.EconomyManager manager, String tablePrefix) {
+        super(tablePrefix);
         this.manager = manager;
-        this.tablePrefix = tablePrefix;
     }
 
-    protected abstract void setupDataSource();
-
     protected void createTables() {
-        try (Connection conn = dataSource.getConnection()) {
+        try (Connection conn = getConnection()) {
             // Create accounts table
             try (PreparedStatement stmt = conn.prepareStatement(
                      "CREATE TABLE IF NOT EXISTS " + tablePrefix + "accounts (" +
@@ -64,21 +62,18 @@ public abstract class SqlStorage implements EconomyStorage {
 
     @Override
     public void load() {
-        setupDataSource();
+        initialize(); // Call savdbcore's initialize
         createTables();
     }
 
     @Override
     public void save() {
-        // SQL databases save instantly, so this is a no-op or could be used for cleanup
-        if (dataSource != null && !dataSource.isClosed()) {
-            dataSource.close();
-        }
+        shutdown(); // Call savdbcore's shutdown
     }
 
     @Override
     public BigDecimal getBalance(UUID uuid) {
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement("SELECT balance FROM " + tablePrefix + "accounts WHERE uuid = ?")) {
             stmt.setString(1, uuid.toString());
             try (ResultSet rs = stmt.executeQuery()) {
@@ -89,13 +84,12 @@ public abstract class SqlStorage implements EconomyStorage {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return BigDecimal.ZERO; // Default balance should be handled by manager if account doesn't exist, but here we return 0
+        return BigDecimal.ZERO;
     }
 
     @Override
     public void setBalance(UUID uuid, BigDecimal amount) {
-        // Legacy method - force update without version check
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(
                      "UPDATE " + tablePrefix + "accounts SET balance = ?, version = version + 1 WHERE uuid = ?")) {
             stmt.setBigDecimal(1, amount);
@@ -108,7 +102,7 @@ public abstract class SqlStorage implements EconomyStorage {
 
     @Override
     public boolean setBalance(UUID uuid, BigDecimal amount, long expectedVersion) {
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(
                      "UPDATE " + tablePrefix + "accounts SET balance = ?, version = version + 1 WHERE uuid = ? AND version = ?")) {
             stmt.setBigDecimal(1, amount);
@@ -124,7 +118,7 @@ public abstract class SqlStorage implements EconomyStorage {
 
     @Override
     public boolean hasAccount(UUID uuid) {
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement("SELECT 1 FROM " + tablePrefix + "accounts WHERE uuid = ?")) {
             stmt.setString(1, uuid.toString());
             try (ResultSet rs = stmt.executeQuery()) {
@@ -138,7 +132,7 @@ public abstract class SqlStorage implements EconomyStorage {
 
     @Override
     public AccountData getAccount(UUID uuid) {
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement("SELECT name, balance, version FROM " + tablePrefix + "accounts WHERE uuid = ?")) {
             stmt.setString(1, uuid.toString());
             try (ResultSet rs = stmt.executeQuery()) {
@@ -160,7 +154,7 @@ public abstract class SqlStorage implements EconomyStorage {
     public void createAccount(UUID uuid, String name) {
         if (hasAccount(uuid)) {
             // Update name
-            try (Connection conn = dataSource.getConnection();
+            try (Connection conn = getConnection();
                  PreparedStatement stmt = conn.prepareStatement(
                          "UPDATE " + tablePrefix + "accounts SET name = ? WHERE uuid = ?")) {
                 stmt.setString(1, name);
@@ -171,12 +165,12 @@ public abstract class SqlStorage implements EconomyStorage {
             }
         } else {
             // Insert new
-            try (Connection conn = dataSource.getConnection();
+            try (Connection conn = getConnection();
                  PreparedStatement stmt = conn.prepareStatement(
                          "INSERT INTO " + tablePrefix + "accounts (uuid, name, balance, version) VALUES (?, ?, ?, 0)")) {
                 stmt.setString(1, uuid.toString());
                 stmt.setString(2, name);
-                stmt.setBigDecimal(3, BigDecimal.valueOf(1000)); // Default balance, should be passed from manager really
+                stmt.setBigDecimal(3, manager.getConfig().defaultBalance);
                 stmt.executeUpdate();
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -186,7 +180,7 @@ public abstract class SqlStorage implements EconomyStorage {
 
     @Override
     public UUID getUUID(String name) {
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement("SELECT uuid FROM " + tablePrefix + "accounts WHERE LOWER(name) = LOWER(?)")) {
             stmt.setString(1, name);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -203,7 +197,7 @@ public abstract class SqlStorage implements EconomyStorage {
     @Override
     public Collection<String> getOfflinePlayerNames() {
         List<String> names = new ArrayList<>();
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement("SELECT name FROM " + tablePrefix + "accounts");
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
@@ -217,7 +211,7 @@ public abstract class SqlStorage implements EconomyStorage {
 
     @Override
     public void logTransaction(long timestamp, String source, String target, BigDecimal amount, String type, String details) {
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(
                      "INSERT INTO " + tablePrefix + "transactions (timestamp, source, target, amount, type, details) VALUES (?, ?, ?, ?, ?, ?)")) {
             stmt.setLong(1, timestamp);
@@ -241,7 +235,7 @@ public abstract class SqlStorage implements EconomyStorage {
         }
         sql += " ORDER BY timestamp DESC";
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, cutoffTimestamp);
             if (!target.equals("*")) {
@@ -267,10 +261,11 @@ public abstract class SqlStorage implements EconomyStorage {
         }
         return logs;
     }
+
     @Override
     public List<AccountData> getTopAccounts(int limit) {
         List<AccountData> accounts = new ArrayList<>();
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(
                      "SELECT name, balance, version FROM " + tablePrefix + "accounts ORDER BY balance DESC LIMIT ?")) {
             stmt.setInt(1, limit);
@@ -288,15 +283,14 @@ public abstract class SqlStorage implements EconomyStorage {
         }
         return accounts;
     }
+
     @Override
     public void deleteAccount(UUID uuid) {
         String sql = "DELETE FROM " + tablePrefix + "accounts WHERE uuid = ?";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
             stmt.setString(1, uuid.toString());
             stmt.executeUpdate();
-            
         } catch (SQLException e) {
             e.printStackTrace();
         }

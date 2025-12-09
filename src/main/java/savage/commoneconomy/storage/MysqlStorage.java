@@ -1,50 +1,37 @@
 package savage.commoneconomy.storage;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
+import savage.savdbcore.config.DBCoreConfig;
 
+/**
+ * MySQL storage for economy data.
+ * Delegates connection management to savdbcore's MysqlStorage.
+ */
 public class MysqlStorage extends SqlStorage {
-    private final String host;
-    private final int port;
-    private final String database;
-    private final String user;
-    private final String password;
 
     public MysqlStorage(savage.commoneconomy.EconomyManager manager, String host, int port, String database, String user, String password, String tablePrefix) {
         super(manager, tablePrefix);
-        this.host = host;
-        this.port = port;
-        this.database = database;
-        this.user = user;
-        this.password = password;
+        
+        // Convert economy config to DBCore config
+        DBCoreConfig.StorageConfig coreConfig = new DBCoreConfig.StorageConfig();
+        coreConfig.poolSize = manager.getConfig().storage.poolSize;
+        coreConfig.connectionTimeout = manager.getConfig().storage.connectionTimeout;
+        coreConfig.idleTimeout = manager.getConfig().storage.idleTimeout;
+        
+        // Create the underlying storage
+        savage.savdbcore.storage.MysqlStorage dbStorage = new savage.savdbcore.storage.MysqlStorage(
+            host, port, database, user, password, tablePrefix, coreConfig
+        );
+        dbStorage.initialize();
+        
+        // Copy the dataSource reference
+        this.dataSource = dbStorage.dataSource;
     }
 
     @Override
     protected void setupDataSource() {
-        HikariConfig config = new HikariConfig();
-        config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database);
-        config.setUsername(user);
-        config.setPassword(password);
-        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
-        
-        config.addDataSourceProperty("cachePrepStmts", "true");
-        config.addDataSourceProperty("prepStmtCacheSize", "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        config.addDataSourceProperty("useServerPrepStmts", "true");
-        config.addDataSourceProperty("useLocalSessionState", "true");
-        config.addDataSourceProperty("rewriteBatchedStatements", "true");
-        config.addDataSourceProperty("cacheResultSetMetadata", "true");
-        config.addDataSourceProperty("cacheServerConfiguration", "true");
-        config.addDataSourceProperty("elideSetAutoCommits", "true");
-        config.addDataSourceProperty("maintainTimeStats", "false");
-
-        // Apply pool settings
-        config.setMaximumPoolSize(manager.getConfig().storage.poolSize);
-        config.setConnectionTimeout(manager.getConfig().storage.connectionTimeout);
-        config.setIdleTimeout(manager.getConfig().storage.idleTimeout);
-
-        this.dataSource = new HikariDataSource(config);
+        // Already set up in constructor
     }
+
     @Override
     protected String getTransactionsTableCreationSql() {
         return "CREATE TABLE IF NOT EXISTS " + tablePrefix + "transactions (" +

@@ -1,41 +1,38 @@
 package savage.commoneconomy.storage;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-import net.fabricmc.loader.api.FabricLoader;
+import savage.savdbcore.config.DBCoreConfig;
 
-import java.nio.file.Path;
-import org.sqlite.SQLiteConfig;
-import java.io.File;
-
+/**
+ * SQLite storage for economy data.
+ * Delegates connection management to savdbcore's SqliteStorage.
+ */
 public class SqliteStorage extends SqlStorage {
-
-    private File databaseFile; // Added declaration for databaseFile
 
     public SqliteStorage(savage.commoneconomy.EconomyManager manager, String tablePrefix) {
         super(manager, tablePrefix);
-        // Initialize databaseFile here, similar to how dbPath was initialized
-        Path configDir = FabricLoader.getInstance().getConfigDir().resolve("savs-common-economy");
-        configDir.toFile().mkdirs();
-        this.databaseFile = configDir.resolve("economy_data.sqlite").toFile();
+        
+        // Convert economy config to DBCore config
+        DBCoreConfig.StorageConfig coreConfig = new DBCoreConfig.StorageConfig();
+        coreConfig.poolSize = manager.getConfig().storage.poolSize;
+        coreConfig.connectionTimeout = manager.getConfig().storage.connectionTimeout;
+        coreConfig.idleTimeout = manager.getConfig().storage.idleTimeout;
+        
+        // Create the underlying storage
+        savage.savdbcore.storage.SqliteStorage dbStorage = new savage.savdbcore.storage.SqliteStorage(
+            "savs-common-economy",
+            "economy_data.sqlite",
+            tablePrefix,
+            coreConfig
+        );
+        dbStorage.initialize();
+        
+        // Copy the dataSource reference
+        this.dataSource = dbStorage.dataSource;
     }
 
     @Override
     protected void setupDataSource() {
-        HikariConfig hikariConfig = new HikariConfig();
-        hikariConfig.setJdbcUrl("jdbc:sqlite:" + databaseFile.getAbsolutePath());
-        hikariConfig.setDriverClassName("org.sqlite.JDBC");
-        
-        // SQLite-specific optimizations
-        hikariConfig.addDataSourceProperty("journal_mode", "WAL");
-        hikariConfig.addDataSourceProperty("synchronous", "NORMAL");
-        
-        // Apply pool settings
-        hikariConfig.setMaximumPoolSize(manager.getConfig().storage.poolSize);
-        hikariConfig.setConnectionTimeout(manager.getConfig().storage.connectionTimeout);
-        hikariConfig.setIdleTimeout(manager.getConfig().storage.idleTimeout);
-        
-        dataSource = new HikariDataSource(hikariConfig);
+        // Already set up in constructor
     }
 
     @Override

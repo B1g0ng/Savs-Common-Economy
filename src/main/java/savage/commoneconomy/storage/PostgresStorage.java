@@ -1,38 +1,35 @@
 package savage.commoneconomy.storage;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
+import savage.savdbcore.config.DBCoreConfig;
 
+/**
+ * PostgreSQL storage for economy data.
+ * Delegates connection management to savdbcore's PostgresStorage.
+ */
 public class PostgresStorage extends SqlStorage {
-    private final String host;
-    private final int port;
-    private final String database;
-    private final String user;
-    private final String password;
 
     public PostgresStorage(savage.commoneconomy.EconomyManager manager, String host, int port, String database, String user, String password, String tablePrefix) {
         super(manager, tablePrefix);
-        this.host = host;
-        this.port = port;
-        this.database = database;
-        this.user = user;
-        this.password = password;
+        
+        // Convert economy config to DBCore config
+        DBCoreConfig.StorageConfig coreConfig = new DBCoreConfig.StorageConfig();
+        coreConfig.poolSize = manager.getConfig().storage.poolSize;
+        coreConfig.connectionTimeout = manager.getConfig().storage.connectionTimeout;
+        coreConfig.idleTimeout = manager.getConfig().storage.idleTimeout;
+        
+        // Create the underlying storage
+        savage.savdbcore.storage.PostgresStorage dbStorage = new savage.savdbcore.storage.PostgresStorage(
+            host, port, database, user, password, tablePrefix, coreConfig
+        );
+        dbStorage.initialize();
+        
+        // Copy the dataSource reference
+        this.dataSource = dbStorage.dataSource;
     }
 
     @Override
     protected void setupDataSource() {
-        HikariConfig config = new HikariConfig();
-        config.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + database);
-        config.setUsername(user);
-        config.setPassword(password);
-        config.setDriverClassName("org.postgresql.Driver");
-        
-        // Apply pool settings
-        config.setMaximumPoolSize(manager.getConfig().storage.poolSize);
-        config.setConnectionTimeout(manager.getConfig().storage.connectionTimeout);
-        config.setIdleTimeout(manager.getConfig().storage.idleTimeout);
-        
-        this.dataSource = new HikariDataSource(config);
+        // Already set up in constructor
     }
 
     @Override

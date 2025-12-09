@@ -1,31 +1,39 @@
 package savage.commoneconomy.util;
 
 import com.google.gson.Gson;
-import io.lettuce.core.RedisClient;
-import io.lettuce.core.RedisURI;
-import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.api.sync.RedisCommands;
-import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
-import io.lettuce.core.pubsub.api.sync.RedisPubSubCommands;
 import savage.commoneconomy.EconomyManager;
 import savage.commoneconomy.SavsCommonEconomy;
 import savage.commoneconomy.config.EconomyConfig;
+import savage.savdbcore.config.DBCoreConfig;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
+/**
+ * Economy-specific Redis manager.
+ * Wraps savdbcore's RedisManager and adds economy-specific pub/sub functionality.
+ */
 public class RedisManager {
     private static RedisManager instance;
-    private RedisClient redisClient;
-    private StatefulRedisPubSubConnection<String, String> subConnection; // For subscribing
-    private StatefulRedisConnection<String, String> pubConnection; // For publishing
+    private final savage.savdbcore.redis.RedisManager coreRedis;
     private final Gson gson = new Gson();
     private final EconomyConfig.RedisConfig config;
-    private boolean connected = false;
     private net.minecraft.server.MinecraftServer server;
 
     private RedisManager(EconomyConfig.RedisConfig config) {
         this.config = config;
+        
+        // Convert economy config to DBCore config
+        DBCoreConfig.RedisConfig coreConfig = new DBCoreConfig.RedisConfig();
+        coreConfig.enabled = config.enabled;
+        coreConfig.host = config.host;
+        coreConfig.port = config.port;
+        coreConfig.password = config.password;
+        coreConfig.channel = config.channel;
+        coreConfig.debugLogging = config.debugLogging;
+        
+        this.coreRedis = new savage.savdbcore.redis.RedisManager(coreConfig);
+        this.coreRedis.setMessageHandler(this::handleMessage);
     }
     
     public void setServer(net.minecraft.server.MinecraftServer server) {
@@ -44,39 +52,7 @@ public class RedisManager {
     }
 
     private void connect() {
-        try {
-            RedisURI.Builder uriBuilder = RedisURI.builder()
-                    .withHost(config.host)
-                    .withPort(config.port);
-
-            if (config.password != null && !config.password.isEmpty()) {
-                uriBuilder.withPassword(config.password.toCharArray());
-            }
-
-            RedisURI redisURI = uriBuilder.build();
-            redisClient = RedisClient.create(redisURI);
-            
-            // Connection for subscribing (receiving messages)
-            subConnection = redisClient.connectPubSub();
-            subConnection.addListener(new io.lettuce.core.pubsub.RedisPubSubAdapter<String, String>() {
-                @Override
-                public void message(String channel, String message) {
-                    handleMessage(message);
-                }
-            });
-            RedisPubSubCommands<String, String> subCommands = subConnection.sync();
-            subCommands.subscribe(config.channel);
-            
-            // Separate connection for publishing (sending messages)
-            pubConnection = redisClient.connect();
-            
-            connected = true;
-            SavsCommonEconomy.LOGGER.info("Redis Pub/Sub connected successfully on channel: " + config.channel);
-
-        } catch (Exception e) {
-            SavsCommonEconomy.LOGGER.warn("Failed to connect to Redis. Continuing without real-time sync.", e);
-            connected = false;
-        }
+        coreRedis.connect();
     }
 
     public void publishBalanceUpdate(UUID uuid, BigDecimal newBalance) {
@@ -84,24 +60,19 @@ public class RedisManager {
     }
     
     public void publishTransaction(UUID targetUuid, BigDecimal newBalance, String type, String sourcePlayer, String message) {
-        if (!connected || pubConnection == null) return;
+        if (!coreRedis.isConnected()) return;
 
-        try {
-            TransactionMessage msg = new TransactionMessage(
-                targetUuid.toString(), 
-                newBalance, 
-                type, 
-                sourcePlayer, 
-                message
-            );
-            String json = gson.toJson(msg);
-            RedisCommands<String, String> commands = pubConnection.sync();
-            commands.publish(config.channel, json);
-            if (config.debugLogging) {
-                SavsCommonEconomy.LOGGER.info("Redis: Published transaction for " + targetUuid + " -> $" + newBalance);
-            }
-        } catch (Exception e) {
-            SavsCommonEconomy.LOGGER.warn("Failed to publish transaction to Redis", e);
+        TransactionMessage msg = new TransactionMessage(
+            targetUuid.toString(), 
+            newBalance, 
+            type, 
+            sourcePlayer, 
+            message
+        );
+        coreRedis.publish(msg);
+        
+        if (config.debugLogging) {
+            SavsCommonEconomy.LOGGER.info("Redis: Published transaction for " + targetUuid + " -> $" + newBalance);
         }
     }
 
@@ -147,19 +118,11 @@ public class RedisManager {
     }
 
     public void shutdown() {
-        if (subConnection != null) {
-            subConnection.close();
-        }
-        if (pubConnection != null) {
-            pubConnection.close();
-        }
-        if (redisClient != null) {
-            redisClient.shutdown();
-        }
+        coreRedis.shutdown();
     }
 
     public boolean isConnected() {
-        return connected;
+        return coreRedis.isConnected();
     }
 
     private static class TransactionMessage {

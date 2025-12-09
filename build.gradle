@@ -16,6 +16,7 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
+	mavenCentral() // For Caffeine and HikariCP
 }
 
 fabricApi {
@@ -37,38 +38,14 @@ dependencies {
 	modImplementation "me.lucko:fabric-permissions-api:0.5.0"
 	include "me.lucko:fabric-permissions-api:0.5.0"
 
-	// Database Dependencies
-	// HikariCP (Connection Pooling)
-	modImplementation "com.zaxxer:HikariCP:5.1.0"
-	include "com.zaxxer:HikariCP:5.1.0"
+	// Savs DB Core - provides database and Redis functionality (includes Caffeine, HikariCP, etc.)
+	modImplementation "savage.savdbcore:savdbcore:1.0.0"
+	include "savage.savdbcore:savdbcore:1.0.0"
 
-	// SQLite
-	modImplementation "org.xerial:sqlite-jdbc:3.46.0.0"
-	include "org.xerial:sqlite-jdbc:3.46.0.0"
-
-	// MySQL
-	modImplementation "com.mysql:mysql-connector-j:8.4.0"
-	include "com.mysql:mysql-connector-j:8.4.0"
-
-	// PostgreSQL
-	modImplementation "org.postgresql:postgresql:42.7.3"
-	include "org.postgresql:postgresql:42.7.3"
-
-	// Caffeine (Caching)
-	modImplementation "com.github.ben-manes.caffeine:caffeine:3.1.8"
-	include "com.github.ben-manes.caffeine:caffeine:3.1.8"
-
-	// Reactive Streams (required by Lettuce)
-	modImplementation "org.reactivestreams:reactive-streams:1.0.4"
-	include "org.reactivestreams:reactive-streams:1.0.4"
-
-	// Reactor Core (required by Lettuce)
-	modImplementation "io.projectreactor:reactor-core:3.5.11"
-	include "io.projectreactor:reactor-core:3.5.11"
-
-	// Lettuce (Redis Client)
-	modImplementation "io.lettuce:lettuce-core:6.3.0.RELEASE"
-	include "io.lettuce:lettuce-core:6.3.0.RELEASE"
+	// Compile-time dependencies (provided by savdbcore at runtime via JAR-in-JAR)
+	// These are needed for compilation but NOT included separately
+	compileOnly "com.zaxxer:HikariCP:5.1.0"
+	compileOnly "com.github.ben-manes.caffeine:caffeine:3.1.6"
 
 	// Common Economy API
 	modImplementation "eu.pb4:common-economy-api:1.1.1"
@@ -76,6 +53,13 @@ dependencies {
 }
 
 repositories {
+	// Add repositories to retrieve artifacts from in here.
+	// You should only use this when depending on other mods because
+	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
+	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
+	// for more information about repositories.
+	mavenCentral() // For Caffeine and HikariCP
+	mavenLocal() // For savdbcore
 	maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
 	maven { url 'https://maven.terraformersmc.com/releases/' }
 	maven { url 'https://jitpack.io' }
