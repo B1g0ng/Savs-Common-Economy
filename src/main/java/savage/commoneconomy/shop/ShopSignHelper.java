@@ -78,7 +78,7 @@ public class ShopSignHelper {
                 if (stock == -1) {
                     stockText = "库存: ∞";
                 } else {
-                    stockText = (shop.isBuying() ? "Space: " : "库存: ") + stock;
+                    stockText = (shop.isBuying() ? "剩余空间: " : "库存: ") + stock;
                 }
                 // Update cached stock value in shop object
                 if (stock != -1) {
@@ -86,7 +86,7 @@ public class ShopSignHelper {
                 }
             } else {
                 // Fallback for client-side (shouldn't happen for logic, but maybe rendering)
-                stockText = (shop.isBuying() ? "Space: " : "库存: ") + shop.getStock();
+                stockText = (shop.isBuying() ? "剩余空间: " : "库存: ") + shop.getStock();
             }
             
             Text headerText;
