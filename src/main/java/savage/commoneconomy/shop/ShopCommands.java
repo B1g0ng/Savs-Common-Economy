@@ -96,7 +96,7 @@ public class ShopCommands {
             context.getSource().sendError(Text.literal("警告: 无法放置告示牌! 商店已创建但是没有告示牌"));
         }
 
-        String shopType = buying ? "购买" : "出售";
+        String shopType = buying ? "收购" : "出售";
         context.getSource().sendFeedback(() -> Text.literal(
                 "已为 " + shopType + " " + heldItem.getName().getString() + 
                 " 创建商店 " + EconomyManager.getInstance().format(price) + " "), false);
@@ -227,7 +227,7 @@ public class ShopCommands {
         context.getSource().sendFeedback(() -> Text.literal("=== 您的商店 ==="), false);
         for (Shop shop : shops) {
             BlockPos pos = shop.getChestLocation();
-            String shopType = shop.isBuying() ? "购买" : "出售";
+            String shopType = shop.isBuying() ? "收购" : "出售";
             String location = "(" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + ")";
             
             context.getSource().sendFeedback(() -> Text.literal(
