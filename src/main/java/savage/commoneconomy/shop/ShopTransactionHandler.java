@@ -20,7 +20,7 @@ public class ShopTransactionHandler {
         
         // Check if shop has enough stock
         if (!shop.canSell(amount)) {
-            player.sendMessage(Text.literal("§cShop doesn't have enough stock!"), false);
+            player.sendMessage(Text.literal("§c商店库存不足!"), false);
             return;
         }
         
@@ -29,7 +29,7 @@ public class ShopTransactionHandler {
         
         // Check if player has enough money
         if (EconomyManager.getInstance().getBalance(player.getUuid()).compareTo(totalPrice) < 0) {
-            player.sendMessage(Text.literal("§cYou don't have enough money! Need " + 
+            player.sendMessage(Text.literal("§c您的余额不足以购买此物品" + 
                     EconomyManager.getInstance().format(totalPrice)), false);
             return;
         }
@@ -37,7 +37,7 @@ public class ShopTransactionHandler {
         // Get chest inventory
         BlockEntity blockEntity = world.getBlockEntity(shop.getChestLocation());
         if (!(blockEntity instanceof ChestBlockEntity chest)) {
-            player.sendMessage(Text.literal("§cShop chest not found!"), false);
+            player.sendMessage(Text.literal("§c无法找到商店箱子!"), false);
             return;
         }
         
@@ -45,7 +45,7 @@ public class ShopTransactionHandler {
         if (!shop.isAdmin()) {
             int removed = removeItemsFromInventory(chest, shop.getItem(), amount);
             if (removed < amount) {
-                player.sendMessage(Text.literal("§cShop doesn't have enough items in chest!"), false);
+                player.sendMessage(Text.literal("§c商店箱子内物品数量不足!"), false);
                 return;
             }
             shop.removeStock(removed);
@@ -87,7 +87,7 @@ public class ShopTransactionHandler {
         // Check if player has the items
         int playerHas = countItemInInventory(player, shop.getItem());
         if (playerHas < amount) {
-            player.sendMessage(Text.literal("§cYou don't have enough items!"), false);
+            player.sendMessage(Text.literal("§c您的物品不足!"), false);
             return;
         }
         
@@ -97,7 +97,7 @@ public class ShopTransactionHandler {
         // Check if shop owner has enough money (unless admin shop)
         if (!shop.isAdmin()) {
             if (EconomyManager.getInstance().getBalance(shop.getOwnerId()).compareTo(totalPrice) < 0) {
-                player.sendMessage(Text.literal("§cShop owner doesn't have enough money!"), false);
+                player.sendMessage(Text.literal("§c商店主人的余额不足以支付给您!"), false);
                 return;
             }
         }
@@ -105,20 +105,20 @@ public class ShopTransactionHandler {
         // Get chest inventory
         BlockEntity blockEntity = world.getBlockEntity(shop.getChestLocation());
         if (!(blockEntity instanceof ChestBlockEntity chest)) {
-            player.sendMessage(Text.literal("§cShop chest not found!"), false);
+            player.sendMessage(Text.literal("§c无法找到商店箱子!"), false);
             return;
         }
         
         // Check if chest has space
         if (!shop.isAdmin() && !hasSpaceForItems(chest, shop.getItem(), amount)) {
-            player.sendMessage(Text.literal("§cShop chest is full!"), false);
+            player.sendMessage(Text.literal("§c商店箱子已满!"), false);
             return;
         }
         
         // Remove items from player
         int removed = removeItemsFromPlayer(player, shop.getItem(), amount);
         if (removed < amount) {
-            player.sendMessage(Text.literal("§cFailed to remove items from inventory!"), false);
+            player.sendMessage(Text.literal("§c移除物品栏物品失败!"), false);
             return;
         }
         
@@ -145,8 +145,8 @@ public class ShopTransactionHandler {
         // Save shop data
         ShopManager.getInstance().save();
         
-        player.sendMessage(Text.literal("§aSold " + amount + "x " + shop.getItem().getName().getString() + 
-                " for " + EconomyManager.getInstance().format(totalPrice)), false);
+        player.sendMessage(Text.literal("§a卖出" + amount + "x " + shop.getItem().getName().getString() + 
+                "获得了" + EconomyManager.getInstance().format(totalPrice)), false);
 
         String sourceName = shop.isAdmin() ? "Admin Shop" : shop.getOwnerId().toString();
         savage.commoneconomy.util.TransactionLogger.log("SHOP_SELL", sourceName, player.getName().getString(), totalPrice, "Sold " + amount + "x " + shop.getItem().getName().getString());
