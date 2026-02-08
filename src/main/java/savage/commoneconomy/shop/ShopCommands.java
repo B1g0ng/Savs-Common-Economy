@@ -98,8 +98,8 @@ public class ShopCommands {
 
         String shopType = buying ? "收购" : "出售";
         context.getSource().sendFeedback(() -> Text.literal(
-                "已为 " + shopType + " " + heldItem.getName().getString() + 
-                " 创建商店,售价为 " + EconomyManager.getInstance().format(price) + " "), false);
+                "已为" + shopType + " " + heldItem.getName().getString() + 
+                "创建商店,售价为" + EconomyManager.getInstance().format(price) + " "), false);
 
         return 1;
     }
@@ -108,7 +108,7 @@ public class ShopCommands {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
         removeMode.put(player.getUuid(), true);
         context.getSource().sendFeedback(() -> Text.literal(
-                "点击商店告示牌来移除, 再次输入/shop remove 来取消操作"), false);
+                "点击商店告示牌来移除,再次输入/shop remove 来取消操作"), false);
         return 1;
     }
 
