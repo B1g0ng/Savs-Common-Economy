@@ -183,7 +183,7 @@ public class ShopCommands {
         ShopManager.getInstance().save();
 
         context.getSource().sendFeedback(() -> Text.literal(
-                "商品价格已更新 " + EconomyManager.getInstance().format(price) + " each."), false);
+                "商品价格已更新为" + EconomyManager.getInstance().format(price) + " "), false);
 
         return 1;
     }
