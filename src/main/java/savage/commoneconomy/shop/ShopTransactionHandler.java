@@ -75,8 +75,8 @@ public class ShopTransactionHandler {
         // Save shop data
         ShopManager.getInstance().save();
         
-        player.sendMessage(Text.literal("§aBought " + amount + "x " + shop.getItem().getName().getString() + 
-                " for " + EconomyManager.getInstance().format(totalPrice)), false);
+        player.sendMessage(Text.literal("§a您购买了" + amount + " x " + shop.getItem().getName().getString() + 
+                "花费您" + EconomyManager.getInstance().format(totalPrice)), false);
         
         String targetName = shop.isAdmin() ? "Admin Shop" : shop.getOwnerId().toString();
         savage.commoneconomy.util.TransactionLogger.log("SHOP_BUY", player.getName().getString(), targetName, totalPrice, "Bought " + amount + "x " + shop.getItem().getName().getString());
@@ -145,7 +145,7 @@ public class ShopTransactionHandler {
         // Save shop data
         ShopManager.getInstance().save();
         
-        player.sendMessage(Text.literal("§a卖出" + amount + "x " + shop.getItem().getName().getString() + 
+        player.sendMessage(Text.literal("§a卖出" + amount + " x " + shop.getItem().getName().getString() + 
                 "获得了" + EconomyManager.getInstance().format(totalPrice)), false);
 
         String sourceName = shop.isAdmin() ? "Admin Shop" : shop.getOwnerId().toString();
