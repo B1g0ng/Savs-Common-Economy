@@ -150,8 +150,8 @@ public class SavsCommonEconomy implements ModInitializer {
 							String itemName = shop.getItem().getName().getString();
 							String price = EconomyManager.getInstance().format(shop.getPrice());
 							
-							serverPlayer.sendMessage(net.minecraft.text.Text.literal("§e输入你想 " + action + " 的数量在聊天框"), false);
-							serverPlayer.sendMessage(net.minecraft.text.Text.literal("§e输入 'all' 来 " + action + " 全部物品"), false);
+							serverPlayer.sendMessage(net.minecraft.text.Text.literal("§e输入你想" + action + "的数量在聊天框"), false);
+							serverPlayer.sendMessage(net.minecraft.text.Text.literal("§e输入'all'来 " + action + "全部物品"), false);
 							
 							return net.minecraft.util.ActionResult.SUCCESS;
 						}
@@ -181,7 +181,7 @@ public class SavsCommonEconomy implements ModInitializer {
 							amount = Integer.parseInt(content);
 							if (amount <= 0) throw new NumberFormatException();
 						} catch (NumberFormatException e) {
-							sender.sendMessage(net.minecraft.text.Text.literal("§c无效金额! 交易已取消"), false);
+							sender.sendMessage(net.minecraft.text.Text.literal("§c无效金额!交易已取消"), false);
 							savage.commoneconomy.shop.ShopInteractionManager.getInstance().removePendingInteraction(sender.getUuid());
 							return false;
 						}
@@ -207,7 +207,7 @@ public class SavsCommonEconomy implements ModInitializer {
 						if (amount > 0) {
 							savage.commoneconomy.shop.ShopTransactionHandler.handleSellTransaction((net.minecraft.server.world.ServerWorld) sender.getEntityWorld(), sender, shop, amount);
 						} else {
-							sender.sendMessage(net.minecraft.text.Text.literal("§c你没有东西可以卖!"), false);
+							sender.sendMessage(net.minecraft.text.Text.literal("§c您没有东西可以卖!"), false);
 						}
 					} 
 					// If shop is selling, player is buying from it
