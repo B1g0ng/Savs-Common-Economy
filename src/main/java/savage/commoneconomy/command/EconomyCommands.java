@@ -96,7 +96,7 @@ public class EconomyCommands {
     private static int balTop(CommandContext<ServerCommandSource> context) {
         java.util.List<EconomyManager.AccountData> topAccounts = EconomyManager.getInstance().getTopAccounts(10);
         
-        context.getSource().sendFeedback(() -> Text.literal("--- Balance Top 10 ---"), false);
+        context.getSource().sendFeedback(() -> Text.literal("--- 余额排行榜 ---"), false);
         for (int i = 0; i < topAccounts.size(); i++) {
             EconomyManager.AccountData account = topAccounts.get(i);
             int rank = i + 1;
@@ -132,7 +132,7 @@ public class EconomyCommands {
     private static int checkSelfBalance(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
         BigDecimal balance = EconomyManager.getInstance().getBalance(player.getUuid());
-        context.getSource().sendFeedback(() -> Text.literal("Your balance: " + EconomyManager.getInstance().format(balance)), false);
+        context.getSource().sendFeedback(() -> Text.literal("您的余额: " + EconomyManager.getInstance().format(balance)), false);
         return 1;
     }
 
@@ -142,12 +142,12 @@ public class EconomyCommands {
         String displayName = getTargetName(context, targetName);
 
         if (targetUUID == null) {
-            context.getSource().sendError(Text.literal("Player not found or has never joined."));
+            context.getSource().sendError(Text.literal("玩家离线或不存在该玩家"));
             return 0;
         }
 
         BigDecimal balance = EconomyManager.getInstance().getBalance(targetUUID);
-        context.getSource().sendFeedback(() -> Text.literal(displayName + "'s balance: " + EconomyManager.getInstance().format(balance)), false);
+        context.getSource().sendFeedback(() -> Text.literal(displayName + "的账户余额: " + EconomyManager.getInstance().format(balance)), false);
         return 1;
     }
 
@@ -178,19 +178,19 @@ public class EconomyCommands {
         String displayName = getTargetName(context, targetName);
 
         if (targetUUID == null) {
-            context.getSource().sendError(Text.literal("Player not found or has never joined."));
+            context.getSource().sendError(Text.literal("玩家离线或不存在该玩家"));
             return 0;
         }
 
         if (sourcePlayer.getUuid().equals(targetUUID)) {
-            context.getSource().sendError(Text.literal("You cannot pay yourself."));
+            context.getSource().sendError(Text.literal("您不能给自己付钱"));
             return 0;
         }
 
         if (EconomyManager.getInstance().removeBalance(sourcePlayer.getUuid(), amount, false)) {
             EconomyManager.getInstance().addBalance(targetUUID, amount, false);
             String formattedAmount = EconomyManager.getInstance().format(amount);
-            sendCommandFeedback(context, "Paid " + formattedAmount + " to " + displayName, false);
+            sendCommandFeedback(context, "已支付 " + formattedAmount + " 给 " + displayName, false);
             
             ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
             if (target != null) {
@@ -199,9 +199,9 @@ public class EconomyCommands {
                 // Let's respect commandNotificationMode for this specific feedback as well.
                 var config = EconomyManager.getInstance().getConfig();
                 if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.ACTION_BAR) {
-                    target.sendMessage(Text.literal("Received " + formattedAmount + " from " + sourcePlayer.getName().getString()), true);
+                    target.sendMessage(Text.literal("收到 " + formattedAmount + " 来自 " + sourcePlayer.getName().getString()), true);
                 } else if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.CHAT) {
-                    target.sendMessage(Text.literal("Received " + formattedAmount + " from " + sourcePlayer.getName().getString()), false);
+                    target.sendMessage(Text.literal("收到 " + formattedAmount + " 来自 " + sourcePlayer.getName().getString()), false);
                 }
                 
                 // Player is local, but we still need to invalidate caches on other servers
@@ -210,7 +210,7 @@ public class EconomyCommands {
                     savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
                         targetUUID,
                         newBalance,
-                        "pay",
+                        "支付",
                         sourcePlayer.getName().getString(),
                         null // No chat message needed, they got it locally
                     );
@@ -224,9 +224,9 @@ public class EconomyCommands {
                     savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
                         targetUUID,
                         newBalance,
-                        "pay",
+                        "支付",
                         sourcePlayer.getName().getString(),
-                        "Received " + formattedAmount + " from " + sourcePlayer.getName().getString()
+                        "收到 " + formattedAmount + " 来自 " + sourcePlayer.getName().getString()
                     );
                 } catch (Exception e) {
                     // Redis is optional
@@ -250,20 +250,20 @@ public class EconomyCommands {
         String displayName = getTargetName(context, targetName);
 
         if (targetUUID == null) {
-            context.getSource().sendError(Text.literal("Player not found or has never joined."));
+            context.getSource().sendError(Text.literal("玩家离线或不存在该玩家"));
             return 0;
         }
 
         if (EconomyManager.getInstance().addBalance(targetUUID, amount, false)) {
-            sendCommandFeedback(context, "Gave " + formattedAmount + " to " + displayName, true);
+            sendCommandFeedback(context, "赠送 " + formattedAmount + " 给 " + displayName, true);
             
             ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
             if (target != null) {
                 var config = EconomyManager.getInstance().getConfig();
                 if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.ACTION_BAR) {
-                    target.sendMessage(Text.literal("Received " + formattedAmount + " (Admin Gift)"), true);
+                    target.sendMessage(Text.literal("收到 " + formattedAmount + " (Admin Gift)"), true);
                 } else if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.CHAT) {
-                    target.sendMessage(Text.literal("Received " + formattedAmount + " (Admin Gift)"), false);
+                    target.sendMessage(Text.literal("收到 " + formattedAmount + " (Admin Gift)"), false);
                 }
                 
                 // Player is local, but we still need to invalidate caches on other servers
@@ -272,7 +272,7 @@ public class EconomyCommands {
                     savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
                         targetUUID,
                         newBalance,
-                        "give",
+                        "赠送",
                         context.getSource().getName(),
                         null // No chat message needed
                     );
@@ -286,9 +286,9 @@ public class EconomyCommands {
                     savage.commoneconomy.util.RedisManager.getInstance().publishTransaction(
                         targetUUID,
                         newBalance,
-                        "give",
+                        "赠送",
                         context.getSource().getName(),
-                        "Received " + formattedAmount + " (Admin Gift)"
+                        "收到 " + formattedAmount + " (Admin Gift)"
                     );
                 } catch (Exception e) {
                     // Redis is optional
@@ -297,7 +297,7 @@ public class EconomyCommands {
             savage.commoneconomy.util.TransactionLogger.log("ADMIN_GIVE", context.getSource().getName(), displayName, amount, "Admin Gift");
             return 1;
         } else {
-            context.getSource().sendError(Text.literal("Transaction failed. Please try again."));
+            context.getSource().sendError(Text.literal("支付失败,请再次重试"));
             return 0;
         }
     }
@@ -312,12 +312,12 @@ public class EconomyCommands {
         String displayName = getTargetName(context, targetName);
 
         if (targetUUID == null) {
-            context.getSource().sendError(Text.literal("Player not found or has never joined."));
+            context.getSource().sendError(Text.literal("玩家离线或不存在该玩家"));
             return 0;
         }
 
         if (!EconomyManager.getInstance().removeBalance(targetUUID, amount, false)) {
-            context.getSource().sendError(Text.literal("Could not take money (Insufficient funds or transaction failed)."));
+            context.getSource().sendError(Text.literal("无法取出余额(余额不足或交易失败)"));
             return 0;
         } else {
             sendCommandFeedback(context, "Took " + formattedAmount + " from " + displayName, true);
@@ -393,7 +393,7 @@ public class EconomyCommands {
         String displayName = getTargetName(context, targetName);
 
         if (targetUUID == null) {
-            context.getSource().sendError(Text.literal("Player not found or has never joined."));
+            context.getSource().sendError(Text.literal("玩家离线或不存在该玩家"));
             return 0;
         }
 
@@ -454,7 +454,7 @@ public class EconomyCommands {
             savage.commoneconomy.util.TransactionLogger.log("WITHDRAW", player.getName().getString(), "Bank Note", amount, "Withdrawal");
             return 1;
         } else {
-            context.getSource().sendError(Text.literal("Insufficient funds."));
+            context.getSource().sendError(Text.literal("余额不足"));
             return 0;
         }
     }
