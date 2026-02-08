@@ -96,7 +96,7 @@ public class ShopCommands {
             context.getSource().sendError(Text.literal("警告: 无法放置告示牌! 商店已创建但是没有告示牌"));
         }
 
-        String shopType = buying ? "买" : "卖";
+        String shopType = buying ? "购买" : "出售";
         context.getSource().sendFeedback(() -> Text.literal(
                 "已为 " + shopType + " " + heldItem.getName().getString() + 
                 " 创建商店 " + EconomyManager.getInstance().format(price) + " "), false);
@@ -140,16 +140,16 @@ public class ShopCommands {
         String shopType = shop.isBuying() ? "Buying" : "Selling";
         String adminStatus = shop.isAdmin() ? " (Admin Shop)" : "";
         
-        context.getSource().sendFeedback(() -> Text.literal("=== Shop Info ==="), false);
-        context.getSource().sendFeedback(() -> Text.literal("Owner: " + shop.getOwnerName()), false);
-        context.getSource().sendFeedback(() -> Text.literal("Type: " + shopType + adminStatus), false);
-        context.getSource().sendFeedback(() -> Text.literal("Item: " + shop.getItem().getName().getString()), false);
-        context.getSource().sendFeedback(() -> Text.literal("Price: " + EconomyManager.getInstance().format(shop.getPrice()) + " each"), false);
+        context.getSource().sendFeedback(() -> Text.literal("=== 商店信息 ==="), false);
+        context.getSource().sendFeedback(() -> Text.literal("商店主人: " + shop.getOwnerName()), false);
+        context.getSource().sendFeedback(() -> Text.literal("商店类型: " + shopType + adminStatus), false);
+        context.getSource().sendFeedback(() -> Text.literal("商品: " + shop.getItem().getName().getString()), false);
+        context.getSource().sendFeedback(() -> Text.literal("价格: " + EconomyManager.getInstance().format(shop.getPrice()) + " "), false);
         
         if (!shop.isAdmin()) {
-            context.getSource().sendFeedback(() -> Text.literal("Stock: " + shop.getStock()), false);
+            context.getSource().sendFeedback(() -> Text.literal("库存: " + shop.getStock()), false);
         } else {
-            context.getSource().sendFeedback(() -> Text.literal("Stock: Unlimited"), false);
+            context.getSource().sendFeedback(() -> Text.literal("库存: 无限"), false);
         }
 
         return 1;
@@ -183,7 +183,7 @@ public class ShopCommands {
         ShopManager.getInstance().save();
 
         context.getSource().sendFeedback(() -> Text.literal(
-                "Shop price updated to " + EconomyManager.getInstance().format(price) + " each."), false);
+                "商品价格已更新 " + EconomyManager.getInstance().format(price) + " each."), false);
 
         return 1;
     }
@@ -227,7 +227,7 @@ public class ShopCommands {
         context.getSource().sendFeedback(() -> Text.literal("=== 您的商店 ==="), false);
         for (Shop shop : shops) {
             BlockPos pos = shop.getChestLocation();
-            String shopType = shop.isBuying() ? "买" : "卖";
+            String shopType = shop.isBuying() ? "购买" : "出售";
             String location = "(" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + ")";
             
             context.getSource().sendFeedback(() -> Text.literal(
