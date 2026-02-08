@@ -99,7 +99,7 @@ public class ShopCommands {
         String shopType = buying ? "收购" : "出售";
         context.getSource().sendFeedback(() -> Text.literal(
                 "已为 " + shopType + " " + heldItem.getName().getString() + 
-                " 创建商店 " + EconomyManager.getInstance().format(price) + " "), false);
+                " 创建商店,售价为 " + EconomyManager.getInstance().format(price) + " "), false);
 
         return 1;
     }
