@@ -190,7 +190,7 @@ public class EconomyCommands {
         if (EconomyManager.getInstance().removeBalance(sourcePlayer.getUuid(), amount, false)) {
             EconomyManager.getInstance().addBalance(targetUUID, amount, false);
             String formattedAmount = EconomyManager.getInstance().format(amount);
-            sendCommandFeedback(context, "已支付 " + formattedAmount + " 给 " + displayName, false);
+            sendCommandFeedback(context, "已支付" + formattedAmount + "给" + displayName, false);
             
             ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
             if (target != null) {
@@ -199,9 +199,9 @@ public class EconomyCommands {
                 // Let's respect commandNotificationMode for this specific feedback as well.
                 var config = EconomyManager.getInstance().getConfig();
                 if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.ACTION_BAR) {
-                    target.sendMessage(Text.literal("收到 " + formattedAmount + " 来自 " + sourcePlayer.getName().getString()), true);
+                    target.sendMessage(Text.literal("收到" + formattedAmount + "来自" + sourcePlayer.getName().getString()), true);
                 } else if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.CHAT) {
-                    target.sendMessage(Text.literal("收到 " + formattedAmount + " 来自 " + sourcePlayer.getName().getString()), false);
+                    target.sendMessage(Text.literal("收到" + formattedAmount + "来自" + sourcePlayer.getName().getString()), false);
                 }
                 
                 // Player is local, but we still need to invalidate caches on other servers
@@ -226,7 +226,7 @@ public class EconomyCommands {
                         newBalance,
                         "支付",
                         sourcePlayer.getName().getString(),
-                        "收到 " + formattedAmount + " 来自 " + sourcePlayer.getName().getString()
+                        "收到" + formattedAmount + "来自" + sourcePlayer.getName().getString()
                     );
                 } catch (Exception e) {
                     // Redis is optional
@@ -255,15 +255,15 @@ public class EconomyCommands {
         }
 
         if (EconomyManager.getInstance().addBalance(targetUUID, amount, false)) {
-            sendCommandFeedback(context, "赠送 " + formattedAmount + " 给 " + displayName, true);
+            sendCommandFeedback(context, "赠送" + formattedAmount + "给" + displayName, true);
             
             ServerPlayerEntity target = context.getSource().getServer().getPlayerManager().getPlayer(targetUUID);
             if (target != null) {
                 var config = EconomyManager.getInstance().getConfig();
                 if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.ACTION_BAR) {
-                    target.sendMessage(Text.literal("收到 " + formattedAmount + " (Admin Gift)"), true);
+                    target.sendMessage(Text.literal("收到" + formattedAmount + " (Admin Gift)"), true);
                 } else if (config.commandNotificationMode == savage.commoneconomy.config.EconomyConfig.NotificationMode.CHAT) {
-                    target.sendMessage(Text.literal("收到 " + formattedAmount + " (Admin Gift)"), false);
+                    target.sendMessage(Text.literal("收到" + formattedAmount + " (Admin Gift)"), false);
                 }
                 
                 // Player is local, but we still need to invalidate caches on other servers
@@ -288,7 +288,7 @@ public class EconomyCommands {
                         newBalance,
                         "赠送",
                         context.getSource().getName(),
-                        "收到 " + formattedAmount + " (Admin Gift)"
+                        "收到" + formattedAmount + "(Admin Gift)"
                     );
                 } catch (Exception e) {
                     // Redis is optional
@@ -351,7 +351,7 @@ public class EconomyCommands {
         String displayName = getTargetName(context, targetName);
 
         if (targetUUID == null) {
-            context.getSource().sendError(Text.literal("Player not found or has never joined."));
+            context.getSource().sendError(Text.literal("玩家离线或不存在该玩家"));
             return 0;
         }
 
