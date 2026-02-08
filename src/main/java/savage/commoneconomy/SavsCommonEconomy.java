@@ -150,7 +150,7 @@ public class SavsCommonEconomy implements ModInitializer {
 							String itemName = shop.getItem().getName().getString();
 							String price = EconomyManager.getInstance().format(shop.getPrice());
 							
-							serverPlayer.sendMessage(net.minecraft.text.Text.literal("§e输入你想 " + action + " 的数量在聊天框."), false);
+							serverPlayer.sendMessage(net.minecraft.text.Text.literal("§e输入你想 " + action + " 的数量在聊天框"), false);
 							serverPlayer.sendMessage(net.minecraft.text.Text.literal("§e输入 'all' 来 " + action + " 全部物品"), false);
 							
 							return net.minecraft.util.ActionResult.SUCCESS;
@@ -245,7 +245,7 @@ public class SavsCommonEconomy implements ModInitializer {
 				// ALWAYS prevent breaking shop chests (even by owner)
 				if (state.getBlock() instanceof net.minecraft.block.ChestBlock) {
 					if (ShopManager.getInstance().isShopChest(pos)) {
-						player.sendMessage(net.minecraft.text.Text.literal("§c您不能破坏商店箱子! 请使用/shop remove来移除."), false);
+						player.sendMessage(net.minecraft.text.Text.literal("§c您不能破坏商店箱子! 请使用/shop remove来移除"), false);
 						return false;
 					}
 				}
@@ -272,12 +272,12 @@ public class SavsCommonEconomy implements ModInitializer {
 							}
 							
 							if (!isOwner && !isAdmin) {
-								player.sendMessage(net.minecraft.text.Text.literal("§c您不能破环这个商店告示牌! 请使用/shop remove来移除."), false);
+								player.sendMessage(net.minecraft.text.Text.literal("§c您不能破环这个商店告示牌! 请使用/shop remove来移除"), false);
 								return false;
 							}
 							// If owner/admin breaks sign, remove the shop
 							ShopManager.getInstance().removeShop(chestPos);
-							player.sendMessage(net.minecraft.text.Text.literal("§e商店已移除 (告示牌被破坏)."), false);
+							player.sendMessage(net.minecraft.text.Text.literal("§e商店已移除 (告示牌被破坏)"), false);
 							return true;
 						}
 					}
