@@ -52,7 +52,7 @@ public class SellCommands {
         BigDecimal price = EconomyManager.getInstance().getItemPrice(itemId);
 
         if (price.compareTo(BigDecimal.ZERO) <= 0) {
-            context.getSource().sendError(Text.literal("This item cannot be sold."));
+            context.getSource().sendError(Text.literal("此物品不能被售卖"));
             return 0;
         }
 
