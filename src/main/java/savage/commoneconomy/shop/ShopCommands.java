@@ -57,25 +57,25 @@ public class ShopCommands {
 
         ItemStack heldItem = player.getMainHandStack();
         if (heldItem.isEmpty()) {
-            context.getSource().sendError(Text.literal("You must hold an item to create a shop!"));
+            context.getSource().sendError(Text.literal("您手里必须拿着物品才能创建商店!"));
             return 0;
         }
 
         HitResult hitResult = player.raycast(5.0, 0.0f, false);
         if (hitResult.getType() != HitResult.Type.BLOCK) {
-            context.getSource().sendError(Text.literal("You must be looking at a chest!"));
+            context.getSource().sendError(Text.literal("创建商店时您必须看向箱子!"));
             return 0;
         }
 
         BlockPos pos = ((BlockHitResult) hitResult).getBlockPos();
         
         if (!(context.getSource().getWorld().getBlockState(pos).getBlock() instanceof net.minecraft.block.ChestBlock)) {
-            context.getSource().sendError(Text.literal("You must be looking at a chest!"));
+            context.getSource().sendError(Text.literal("创建商店时您必须看向箱子!"));
             return 0;
         }
 
         if (ShopManager.getInstance().isShopChest(pos)) {
-            context.getSource().sendError(Text.literal("A shop already exists at this location!"));
+            context.getSource().sendError(Text.literal("此位置已经存在一个商店!"));
             return 0;
         }
 
@@ -93,13 +93,13 @@ public class ShopCommands {
         );
 
         if (!ShopSignHelper.placeSign(context.getSource().getWorld(), pos, shop, player.getHorizontalFacing())) {
-            context.getSource().sendError(Text.literal("Warning: Could not place sign! Shop created but no sign."));
+            context.getSource().sendError(Text.literal("警告: 无法放置告示牌! 商店已创建但是没有告示牌"));
         }
 
-        String shopType = buying ? "buying" : "selling";
+        String shopType = buying ? "买" : "卖";
         context.getSource().sendFeedback(() -> Text.literal(
-                "Shop created! " + shopType + " " + heldItem.getName().getString() + 
-                " for " + EconomyManager.getInstance().format(price) + " each."), false);
+                "已为 " + shopType + " " + heldItem.getName().getString() + 
+                " 创建商店 " + EconomyManager.getInstance().format(price) + " "), false);
 
         return 1;
     }
@@ -162,7 +162,7 @@ public class ShopCommands {
 
         HitResult hitResult = player.raycast(5.0, 0.0f, false);
         if (hitResult.getType() != HitResult.Type.BLOCK) {
-            context.getSource().sendError(Text.literal("You must be looking at a shop!"));
+            context.getSource().sendError(Text.literal("您必须看向商店箱子!"));
             return 0;
         }
 
@@ -170,12 +170,12 @@ public class ShopCommands {
         Shop shop = ShopManager.getInstance().getShop(pos);
 
         if (shop == null) {
-            context.getSource().sendError(Text.literal("No shop found at this location!"));
+            context.getSource().sendError(Text.literal("此位置未找到商店!"));
             return 0;
         }
 
         if (!shop.getOwnerId().equals(player.getUuid()) && !savage.commoneconomy.util.PermissionsHelper.check(context.getSource(), "savscommoneconomy.admin", 2)) {
-            context.getSource().sendError(Text.literal("You don't own this shop!"));
+            context.getSource().sendError(Text.literal("您不是这个商店的主人!"));
             return 0;
         }
 
@@ -193,7 +193,7 @@ public class ShopCommands {
 
         HitResult hitResult = player.raycast(5.0, 0.0f, false);
         if (hitResult.getType() != HitResult.Type.BLOCK) {
-            context.getSource().sendError(Text.literal("You must be looking at a shop!"));
+            context.getSource().sendError(Text.literal("您必须看向商店箱子!"));
             return 0;
         }
 
@@ -201,7 +201,7 @@ public class ShopCommands {
         Shop shop = ShopManager.getInstance().getShop(pos);
 
         if (shop == null) {
-            context.getSource().sendError(Text.literal("No shop found at this location!"));
+            context.getSource().sendError(Text.literal("此位置未找到商店!"));
             return 0;
         }
 
@@ -220,14 +220,14 @@ public class ShopCommands {
         var shops = ShopManager.getInstance().getPlayerShops(player.getUuid());
         
         if (shops.isEmpty()) {
-            context.getSource().sendFeedback(() -> Text.literal("You don't own any shops."), false);
+            context.getSource().sendFeedback(() -> Text.literal("您不是这个商店的主人"), false);
             return 1;
         }
 
-        context.getSource().sendFeedback(() -> Text.literal("=== Your Shops ==="), false);
+        context.getSource().sendFeedback(() -> Text.literal("=== 您的商店 ==="), false);
         for (Shop shop : shops) {
             BlockPos pos = shop.getChestLocation();
-            String shopType = shop.isBuying() ? "Buying" : "Selling";
+            String shopType = shop.isBuying() ? "买" : "卖";
             String location = "(" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + ")";
             
             context.getSource().sendFeedback(() -> Text.literal(
