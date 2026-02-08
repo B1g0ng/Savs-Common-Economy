@@ -64,7 +64,7 @@ public class ShopSignHelper {
     
     public static void updateSignText(World world, BlockPos signPos, Shop shop) {
         if (world.getBlockEntity(signPos) instanceof SignBlockEntity signEntity) {
-            String shopType = shop.isBuying() ? "买" : "卖";
+            String shopType = shop.isBuying() ? "收购" : "出售";
             String itemName = shop.getItem().getName().getString();
             if (itemName.length() > 15) {
                 itemName = itemName.substring(0, 12) + "...";
