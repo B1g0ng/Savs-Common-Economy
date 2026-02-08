@@ -125,11 +125,11 @@ public class SavsCommonEconomy implements ModInitializer {
 									// Remove the shop
 									ShopManager.getInstance().removeShop(chestPos);
 									savage.commoneconomy.shop.ShopSignHelper.removeSign(world, pos);
-									serverPlayer.sendMessage(net.minecraft.text.Text.literal("§aShop removed!"), false);
+									serverPlayer.sendMessage(net.minecraft.text.Text.literal("§a商店已移除!"), false);
 									ShopCommands.exitRemoveMode(serverPlayer.getUuid());
 									return net.minecraft.util.ActionResult.SUCCESS;
 								} else {
-									serverPlayer.sendMessage(net.minecraft.text.Text.literal("§cYou don't own this shop!"), false);
+									serverPlayer.sendMessage(net.minecraft.text.Text.literal("§c您不是商店的主人!"), false);
 									ShopCommands.exitRemoveMode(serverPlayer.getUuid());
 									return net.minecraft.util.ActionResult.FAIL;
 								}
@@ -146,12 +146,12 @@ public class SavsCommonEconomy implements ModInitializer {
 							// Shop buying = true -> Shop wants to buy items -> Player sells to shop
 							// Shop buying = false -> Shop wants to sell items -> Player buys from shop
 							
-							String action = shop.isBuying() ? "sell" : "buy";
+							String action = shop.isBuying() ? "卖" : "买";
 							String itemName = shop.getItem().getName().getString();
 							String price = EconomyManager.getInstance().format(shop.getPrice());
 							
-							serverPlayer.sendMessage(net.minecraft.text.Text.literal("§eType the amount you want to " + action + " in chat."), false);
-							serverPlayer.sendMessage(net.minecraft.text.Text.literal("§eType 'all' to " + action + " everything."), false);
+							serverPlayer.sendMessage(net.minecraft.text.Text.literal("§e输入你想 " + action + " 的数量在聊天框."), false);
+							serverPlayer.sendMessage(net.minecraft.text.Text.literal("§e输入 'all' 来 " + action + " 全部物品"), false);
 							
 							return net.minecraft.util.ActionResult.SUCCESS;
 						}
@@ -181,7 +181,7 @@ public class SavsCommonEconomy implements ModInitializer {
 							amount = Integer.parseInt(content);
 							if (amount <= 0) throw new NumberFormatException();
 						} catch (NumberFormatException e) {
-							sender.sendMessage(net.minecraft.text.Text.literal("§cInvalid amount! Transaction cancelled."), false);
+							sender.sendMessage(net.minecraft.text.Text.literal("§c无效金额! 交易已取消"), false);
 							savage.commoneconomy.shop.ShopInteractionManager.getInstance().removePendingInteraction(sender.getUuid());
 							return false;
 						}
@@ -207,7 +207,7 @@ public class SavsCommonEconomy implements ModInitializer {
 						if (amount > 0) {
 							savage.commoneconomy.shop.ShopTransactionHandler.handleSellTransaction((net.minecraft.server.world.ServerWorld) sender.getEntityWorld(), sender, shop, amount);
 						} else {
-							sender.sendMessage(net.minecraft.text.Text.literal("§cYou don't have any items to sell!"), false);
+							sender.sendMessage(net.minecraft.text.Text.literal("§c你没有东西可以卖!"), false);
 						}
 					} 
 					// If shop is selling, player is buying from it
@@ -227,7 +227,7 @@ public class SavsCommonEconomy implements ModInitializer {
 						if (amount > 0) {
 							savage.commoneconomy.shop.ShopTransactionHandler.handleBuyTransaction((net.minecraft.server.world.ServerWorld) sender.getEntityWorld(), sender, shop, amount);
 						} else {
-							sender.sendMessage(net.minecraft.text.Text.literal("§cYou cannot afford any items or shop is out of stock!"), false);
+							sender.sendMessage(net.minecraft.text.Text.literal("§c您的余额不足或物品已经售空!"), false);
 						}
 					}
 					
@@ -245,7 +245,7 @@ public class SavsCommonEconomy implements ModInitializer {
 				// ALWAYS prevent breaking shop chests (even by owner)
 				if (state.getBlock() instanceof net.minecraft.block.ChestBlock) {
 					if (ShopManager.getInstance().isShopChest(pos)) {
-						player.sendMessage(net.minecraft.text.Text.literal("§cYou cannot break shop chests! Remove the shop first with /shop remove."), false);
+						player.sendMessage(net.minecraft.text.Text.literal("§c您不能破坏商店箱子! 请使用/shop remove来移除."), false);
 						return false;
 					}
 				}
@@ -272,12 +272,12 @@ public class SavsCommonEconomy implements ModInitializer {
 							}
 							
 							if (!isOwner && !isAdmin) {
-								player.sendMessage(net.minecraft.text.Text.literal("§cYou cannot break this shop sign! Use /shop remove instead."), false);
+								player.sendMessage(net.minecraft.text.Text.literal("§c您不能破环这个商店告示牌! 请使用/shop remove来移除."), false);
 								return false;
 							}
 							// If owner/admin breaks sign, remove the shop
 							ShopManager.getInstance().removeShop(chestPos);
-							player.sendMessage(net.minecraft.text.Text.literal("§eShop removed (sign broken)."), false);
+							player.sendMessage(net.minecraft.text.Text.literal("§e商店已移除 (告示牌被破坏)."), false);
 							return true;
 						}
 					}
