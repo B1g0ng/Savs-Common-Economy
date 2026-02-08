@@ -108,7 +108,7 @@ public class ShopCommands {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
         removeMode.put(player.getUuid(), true);
         context.getSource().sendFeedback(() -> Text.literal(
-                "Click on a shop sign to remove it. Run /shop remove again to cancel."), false);
+                "点击商店告示牌来移除, 再次输入/shop remove 来取消操作"), false);
         return 1;
     }
 
@@ -125,7 +125,7 @@ public class ShopCommands {
 
         HitResult hitResult = player.raycast(5.0, 0.0f, false);
         if (hitResult.getType() != HitResult.Type.BLOCK) {
-            context.getSource().sendError(Text.literal("You must be looking at a shop!"));
+            context.getSource().sendError(Text.literal("您必须看向商店箱子!"));
             return 0;
         }
 
@@ -133,7 +133,7 @@ public class ShopCommands {
         Shop shop = ShopManager.getInstance().getShop(pos);
 
         if (shop == null) {
-            context.getSource().sendError(Text.literal("No shop found at this location!"));
+            context.getSource().sendError(Text.literal("此位置未找到商店!"));
             return 0;
         }
 
