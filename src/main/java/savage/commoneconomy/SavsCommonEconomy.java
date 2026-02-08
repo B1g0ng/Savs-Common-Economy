@@ -151,7 +151,7 @@ public class SavsCommonEconomy implements ModInitializer {
 							String price = EconomyManager.getInstance().format(shop.getPrice());
 							
 							serverPlayer.sendMessage(net.minecraft.text.Text.literal("§e输入你想" + action + "的数量在聊天框"), false);
-							serverPlayer.sendMessage(net.minecraft.text.Text.literal("§e输入'all'来 " + action + "全部物品"), false);
+							serverPlayer.sendMessage(net.minecraft.text.Text.literal("§e输入'all'来" + action + "全部物品"), false);
 							
 							return net.minecraft.util.ActionResult.SUCCESS;
 						}
