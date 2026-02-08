@@ -64,7 +64,7 @@ public class ShopSignHelper {
     
     public static void updateSignText(World world, BlockPos signPos, Shop shop) {
         if (world.getBlockEntity(signPos) instanceof SignBlockEntity signEntity) {
-            String shopType = shop.isBuying() ? "Buying" : "Selling";
+            String shopType = shop.isBuying() ? "买" : "卖";
             String itemName = shop.getItem().getName().getString();
             if (itemName.length() > 15) {
                 itemName = itemName.substring(0, 12) + "...";
@@ -76,9 +76,9 @@ public class ShopSignHelper {
             if (world instanceof net.minecraft.server.world.ServerWorld serverWorld) {
                 int stock = ShopStockCalculator.calculateStock(serverWorld, shop);
                 if (stock == -1) {
-                    stockText = "Stock: ∞";
+                    stockText = "库存: ∞";
                 } else {
-                    stockText = (shop.isBuying() ? "Space: " : "Stock: ") + stock;
+                    stockText = (shop.isBuying() ? "Space: " : "库存: ") + stock;
                 }
                 // Update cached stock value in shop object
                 if (stock != -1) {
@@ -86,7 +86,7 @@ public class ShopSignHelper {
                 }
             } else {
                 // Fallback for client-side (shouldn't happen for logic, but maybe rendering)
-                stockText = (shop.isBuying() ? "Space: " : "Stock: ") + shop.getStock();
+                stockText = (shop.isBuying() ? "Space: " : "库存: ") + shop.getStock();
             }
             
             Text headerText;
